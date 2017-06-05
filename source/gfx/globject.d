@@ -5,9 +5,12 @@ abstract class GLObject
 {
     ~this()
     {
+        release();
     }
 
-    void release();
+    @property auto object() const { return obj; }
+
+    abstract void release();
 
     protected GLuint obj;
 }

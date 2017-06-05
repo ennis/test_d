@@ -4,11 +4,24 @@
 		"Alexandre"
 	],
 	"dependencies": {
-        "gl3n": "~master",
-		"derelict-gl3": "~>2.0.0-alpha.5"
+		"gl3n": "~master",
+		"colorize": "~>1.0.5",
+		"derelict-imgui": "~>0.9.4",
+        "gfm:core": "~>6.2.7",
+        "gfm:logger": "~>6.2.7",
+        "gfm:assimp": "~>6.2.7",
+		"luad": "~master"
 	},
-	"libs-windows": ["ext/glfw3/lib/glfw3dll"],
-    "libs-posix": ["glfw3"],
+	"libs-windows": [
+		"ext/glfw3/glfw3dll",
+		"ext/cimgui/cimgui",
+		"ext/luajit/lua51"
+	],
+	"libs-posix": [
+		"glfw3",
+		"cimgui",
+		"lua51"
+	],
 	"description": "A minimal D application.",
 	"copyright": "Copyright © 2017, Alexandre",
 	"license": "MIT"

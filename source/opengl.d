@@ -1,2 +1,2 @@
 module opengl;
-public import derelict.opengl;
+public import glad.gl.gl;

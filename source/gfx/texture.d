@@ -95,8 +95,6 @@ class Texture : GLObject
     {
         this.desc = desc;
 
-        alias desc2 = this.desc;
-
         switch (desc.dims)
         {
         case ImageDimensions.Image1D:
@@ -123,7 +121,7 @@ class Texture : GLObject
         glCreateTextures(target, 1, &tex_obj);
         if (desc.opts & Options.SparseStorage)
         {
-            //glTextureParameteri(tex_obj, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
+            glTextureParameteri(tex_obj, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
         }
 
         final switch (target)
@@ -160,7 +158,8 @@ class Texture : GLObject
     /// See also Texture::MipMaps, Texture::Options
     static Texture create1D(ImageFormat fmt, int w, int mipMaps = 1, Options opts = Options.None)
     {
-        return null;
+        Desc desc = {ImageDimensions.Image1D, fmt, w, 1, 1, 0, mipMaps, opts};
+        return new Texture(desc);
     }
 
     /// Create a 2D texture. If ms.count != 0, a multisample texture is created
@@ -168,7 +167,8 @@ class Texture : GLObject
     static Texture create2D(ImageFormat fmt, int w, int h, int mipMaps = 1,
             int samples = 0, Options opts = Options.None)
     {
-        return null;
+        Desc desc = {ImageDimensions.Image2D, fmt, w, h, 1, samples, mipMaps, opts};
+        return new Texture(desc);
     }
 
     /// Create a 3D texture
@@ -176,8 +176,8 @@ class Texture : GLObject
     static Texture create3D(ImageFormat fmt, int w, int h, int d, int mipMaps = 1,
             Options opts = Options.None)
     {
-
-        return null;
+        Desc desc = {ImageDimensions.Image3D, fmt, w, h, d, 0, mipMaps, opts};
+        return new Texture(desc);
     }
 
     private Desc desc;
