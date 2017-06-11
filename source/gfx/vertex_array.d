@@ -9,3 +9,11 @@ struct VertexAttribute {
   int relativeOffset;
   bool normalized;
 }
+
+class VertexArray : GLObject 
+{
+  override void release()
+  {
+    
+  }
+}

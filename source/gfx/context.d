@@ -9,10 +9,11 @@ private
             GLsizei length, const(GLubyte)* msg, void* data)
     {
         import std.conv : to;
+        import core.runtime : defaultTraceHandler;
+        
         if (severity != GL_DEBUG_SEVERITY_LOW && severity != GL_DEBUG_SEVERITY_NOTIFICATION)
         {
-            import core.runtime : defaultTraceHandler;
-            debugMessage("GL: %s", to!string(cast(const(char)*)msg));
+            debugMessage("GL(%s): %s", severity.stringof, to!string(cast(const(char)*)msg));
             debugMessage("GL: stack trace:");
             debugMessage(defaultTraceHandler.toString());
         }
@@ -146,6 +147,10 @@ private:
     //Framebuffer screenFbo;
     // Graphics frame capture
     long nextFrameCapture = -1;
+}
+
+auto getGfxContext() {
+    return currentCtx;
 }
 
 private __gshared Context currentCtx;

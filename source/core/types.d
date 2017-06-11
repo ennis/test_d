@@ -1,5 +1,7 @@
 module core.types;
-import gl3n.linalg;
+public import gfm.math.matrix;
+public import gfm.math.vector;
+public import gfm.math.quaternion;
 
 alias ivec2 = vec2i;
 alias ivec3 = vec3i;

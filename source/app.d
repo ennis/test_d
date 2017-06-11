@@ -15,12 +15,91 @@ import unique;
 import imgui_glfw;
 import derelict.imgui.imgui;
 
+struct UIName 
+{
+	string name;
+}
+
+struct UISlider(T)
+{
+	T minValue;
+	T maxValue;
+}
+
+struct UIValueFormat
+{
+	string formatString;
+}
+
+alias UISliderFloat = UISlider!float;
+alias UISliderInt = UISlider!int;
+alias UISliderDouble = UISlider!double;
+
 struct Entity
 {
 	ulong eid;
 	ulong lastUpdate;
 	Unique!string name;
 }
+
+struct Component 
+{
+	@UIName("Range")
+	@UISliderFloat(0.0f, 1.0f)
+	float range;
+	
+	@UIName("Stuff")
+	@UISliderInt(0, 100)
+	int stuff;
+}
+
+alias I(alias X) = X;
+
+void igGenericGUI(T)(string name, auto ref T val) if (is(T == struct))
+{
+	import std.traits : hasUDA, getUDAs;
+
+	foreach (m; __traits(allMembers, T)) {
+		//pragma(msg, "[GUI struct member: " ~ m ~ "]");
+		auto mm = &__traits(getMember, val, m);
+		alias MT = typeof(__traits(getMember, val, m));
+
+		string memberName;
+		static if (hasUDA!(mm, UIName)) {
+			memberName = getUDAs!(mm, UIName)[0].name;
+		}
+		else {
+			memberName = m;
+		}
+
+		static if (is(MT == float) || is(MT == double) || is(MT == int)) {
+			MT minValue = 0;
+			MT maxValue = 1;
+			static if (hasUDA!(mm, UISlider!MT)) {
+				minValue = getUDAs!(mm, UISlider!MT)[0].minValue;
+				maxValue = getUDAs!(mm, UISlider!MT)[0].maxValue;
+			}
+
+			static if (is(MT == float)) {
+				igSliderFloat(memberName.ptr, mm, minValue, maxValue);
+			}
+			else static if (is(MT == double)) {
+				
+			}
+			else static if (is(MT == int)) {
+				igSliderInt(memberName.ptr, mm, minValue, maxValue);
+			}
+		}
+		else static if (is(MT == string)) {
+			char[1000] buf;
+			//igInputText(memberName, )
+		}
+		else static if (is(MT == struct)) {
+			//igGenericGUI(memberName, mm);
+		}
+	}
+}
+
 
 
 void main()
@@ -45,14 +124,7 @@ void main()
 		glfwTerminate();
 		assert(false, "Application failed to initialize (glfwCreateWindow)");
 	}
-	//glfwSetWindowUserPointer(w, this);
 	glfwMakeContextCurrent(w);
-	/*if (!gl::sys::LoadFunctions()) {
-    glfwTerminate();
-    assert(false, "Application failed to initialize (ogl_LoadFunctions)");
-	}*/
-	// glfwSwapInterval(1);
-
 	enforce(gladLoadGL(), "Could not load opengl functions");
 	writefln("OpenGL Version %d.%d loaded", GLVersion.major, GLVersion.minor);
 
@@ -104,6 +176,14 @@ void main()
 	int screenH;
 	glfwGetFramebufferSize(w, &screenW, &screenH);
 
+	static struct Test 
+	{
+		int a;
+		int b;
+		float c;
+	} 
+	Component tt;
+
 	while (!glfwWindowShouldClose(w))
 	{
 		glfwPollEvents();
@@ -129,6 +209,7 @@ void main()
 			if (igButton("Test Window")) show_test_window = !show_test_window;
 			igText("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 			igText("Instantanous %.3f ms/frame (%.1f FPS)", tdiff * 1000.0f, 1.0f / tdiff);
+			igGenericGUI("Test reflection", tt);
 		}
 
 		if (show_test_window)
