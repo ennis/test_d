@@ -1,5 +1,5 @@
+language: d 
 d:
   - ldc
 env:
   - ARCH="x86_64"
-  
