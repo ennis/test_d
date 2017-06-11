@@ -1,4 +1,4 @@
-module unique;
+module core.unique;
 
 struct Unique(T)
 {

@@ -8,7 +8,7 @@
 		"derelict-glfw3": "4.0.0-alpha.6",
 		"derelict-imgui": "0.9.4",
 		"derelict-util": "2.0.6",
-		"gfm": "6.2.7",
+		"gfm": "6.2.9",
 		"gl3n": "~master",
 		"luad": "~master",
 		"test_allocator": "0.0.5",

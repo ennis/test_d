@@ -1,56 +1,8 @@
 module gfx.texture;
 import gfx.globject;
+import gfx.glformatinfo;
 import opengl;
 import core.imageformat;
-
-/// Structure containing information about the OpenGL internal format
-/// corresponding to an 'ImageFormat'
-struct GLFormatInfo
-{
-    GLenum internal_fmt; //< Corresponding internal format
-    GLenum external_fmt; //< Preferred external format for uploads/reads (deprecated?)
-    GLenum type; //< Preferred element type for uploads/reads
-    int num_comp; //< number of components (channels) (TODO redundant)
-    int size; //< Size of one pixel in bytes
-};
-
-immutable GLFormatInfo glfmt_rgba8_unorm = GLFormatInfo(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 4, 4);
-
-ref const(GLFormatInfo) getGLImageFormatInfo(ImageFormat fmt)
-{
-    switch (fmt)
-    {
-   // case ImageFormat.R32G32B32A32_UINT:
-    //    return glfmt_rgba32_uint;
-    //case ImageFormat.R16G16B16A16_SFLOAT:
-    //    return glfmt_rgba16_float;
-    case ImageFormat.R8G8B8A8_UNORM:
-        return glfmt_rgba8_unorm;
-    //case ImageFormat.R8G8B8A8_SNORM:
-    //    return glfmt_r8_unorm;
-   // case ImageFormat.R32_SFLOAT:
-    //    return glfmt_r32_float;
-   // case ImageFormat.R32G32_SFLOAT:
-   //     return glfmt_rg32_float;
-   // case ImageFormat.R32G32B32A32_SFLOAT:
-   //     return glfmt_rgba32_float;
-   // case ImageFormat.D32_SFLOAT:
-   //     return glfmt_depth32_float;
-   // case ImageFormat.A2R10G10B10_UNORM_PACK32:
-    //    return glfmt_argb_10_10_10_2_unorm;
-   // case ImageFormat.R8G8B8A8_SRGB:
-   //     return glfmt_rgba8_unorm_srgb;
-   // case ImageFormat.R16G16_SFLOAT:
-   //     return glfmt_rg16_float;
-   // case ImageFormat.R16G16_SINT:
-   //     return glfmt_rg16_sint;
-   // case ImageFormat.A2R10G10B10_SNORM_PACK32:
-        // return glfmt_argb_10_10_10_2_snorm;   // there is no signed version of this
-        // format in OpenGL
-    default:
-        assert(false, "Unsupported image format");
-    }
-}
 
 class Texture : GLObject
 {
@@ -113,7 +65,8 @@ class Texture : GLObject
         case ImageDimensions.Image3D:
             target = GL_TEXTURE_3D;
             break;
-        default: assert(0);
+        default:
+            assert(0);
         }
 
         const auto glfmt = getGLImageFormatInfo(desc.fmt);
@@ -151,6 +104,50 @@ class Texture : GLObject
         obj = tex_obj;
     }
 
+    // Type-safe pixel data upload
+    /*void updateRegion(T)(int x, int y, int z, int width, int height, int depth, T[] data)
+        if (T.sizeof % 4 == 0)
+    {
+        // check data size
+        assert(width*height*depth == data.length);
+        // infer pixel transfer formats from T
+        // ubyte[N]
+        // float, vec2, vec3, vec4
+        GLenum channels;
+        GLenum type;
+
+        static if (is(T == float)) {
+
+        }
+    }*/
+
+    // Upload data (raw)
+    // No check is performed on pixelData
+    void updateRegionRaw(int mipLevel, int x, int y, int z, int width, int height, int depth, GLenum channels, GLenum type, void[] pixelData)
+    {
+        switch (desc.dims) with (ImageDimensions) {
+        case Image1D:
+            glTextureSubImage1D(obj, mipLevel, x, width,
+                                channels, type, pixelData.ptr);
+            break;
+        case Image2D:
+            glTextureSubImage2D(obj, mipLevel, x, y, width, height,
+                                channels, type, pixelData.ptr);
+            break;
+        case Image3D:
+            glTextureSubImage3D(obj, mipLevel, x, y, z, width,
+                                height, depth, channels, type, pixelData.ptr);
+            break;
+        default: assert(false);
+        }
+    }
+
+    @property auto width() const { return desc.width; }
+    @property auto height() const { return desc.height; }
+    @property auto depth() const { return desc.depth; }
+    @property auto format() const { return desc.fmt; }
+    @property auto dimensions() const { return desc.dims; }
+
     //====================================
     // Named constructors
 
@@ -167,7 +164,10 @@ class Texture : GLObject
     static Texture create2D(ImageFormat fmt, int w, int h, int mipMaps = 1,
             int samples = 0, Options opts = Options.None)
     {
-        Desc desc = {ImageDimensions.Image2D, fmt, w, h, 1, samples, mipMaps, opts};
+        // dfmt off
+        Desc desc = {
+            ImageDimensions.Image2D, fmt, w, h, 1, samples, mipMaps, opts};
+        // dfmt on
         return new Texture(desc);
     }
 
@@ -183,3 +183,4 @@ class Texture : GLObject
     private Desc desc;
     private GLenum target = GL_TEXTURE_2D;
 }
+

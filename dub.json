@@ -4,7 +4,6 @@
 		"Alexandre"
 	],
 	"dependencies": {
-		"gl3n": "~master",
 		"colorize": "~>1.0.5",
 		"derelict-imgui": "~>0.9.4",
         "gfm:core": "~>6.2.7",

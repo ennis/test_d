@@ -1,6 +1,8 @@
 module gfx.context;
 import core.types;
 import core.dbg;
+import gfx.fence;
+import gfx.upload_buffer;
 import opengl;
 
 private
@@ -81,6 +83,9 @@ public:
 
     ~this()
     {
+        if (currentCtx == this) {
+            currentCtx = null;
+        }
     }
 
     void setFrameCapture(long targetFrameIndex)
@@ -99,7 +104,7 @@ public:
     }
 
     // disable copy and move
-    @property ref const(GLImplementationLimits) implementationLimits()
+    @property ref const(GLImplementationLimits) implementationLimits() const
     {
         return implLimits;
     }
@@ -132,7 +137,12 @@ public:
 
     void endFrame()
     {
-
+        frameIndex++;
+        //AG_FRAME_TRACE("frameIndex={}", frameIndex);
+        frameFence.signal(frameIndex);
+        if (frameIndex >= cfg.maxFramesInFlight) {
+            frameFence.wait(frameIndex - cfg.maxFramesInFlight + 1);
+        }
     }
 
     //Framebuffer getDefaultFramebuffer() { return screenFbo; }
@@ -140,7 +150,7 @@ public:
 private:
     GLImplementationLimits implLimits;
     Config cfg;
-    //Fence frameFence;
+    Fence frameFence;
     long frameIndex;
     int width;
     int height;

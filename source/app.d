@@ -10,7 +10,7 @@ import gfx.state_group;
 import glad.gl.loader;
 import std.exception;
 import core.memory;
-import unique;
+import core.unique;
 
 import imgui_glfw;
 import derelict.imgui.imgui;
@@ -146,7 +146,7 @@ void main()
 								Texture.Options.SparseStorage);
 
 	// test allocation
-	immutable(long) initial_entities = 60_000_000;
+	immutable(long) initial_entities = 60_000;
 	immutable(long) turnover = 100;
 	import std.conv : to;
 
