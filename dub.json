@@ -18,8 +18,7 @@
 	],
 	"libs-posix": [
 		"glfw3",
-		"cimgui",
-		"lua51"
+		"luajit"
 	],
 	"description": "A minimal D application.",
 	"copyright": "Copyright © 2017, Alexandre",
