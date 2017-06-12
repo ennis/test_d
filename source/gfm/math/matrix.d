@@ -351,7 +351,7 @@ struct Matrix(T, int R, int C)
                                                    && is(U._T : _T)
                                                    && (_R == 4) && (_C == 4))
         {
-            auto m3 = cast(mat3!T)(this);
+            auto m3 = cast(tmat3!T)(this);
             return cast(U)(m3);
         }
 

@@ -265,6 +265,7 @@ template isQuaternionInstantiation(U)
 }
 
 alias Quaternion!float quatf;
+alias Quaternion!float quat;
 alias Quaternion!double quatd;
 
 /// Linear interpolation, for quaternions.

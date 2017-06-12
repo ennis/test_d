@@ -168,9 +168,9 @@ deferredPass =
 }
 `;
 
-    lua.doString(src);
+    /*lua.doString(src);
     auto ppdef = lua.get!PipelineDef("deferredPass");
     assert(ppdef.shaderFile == "DeferredDebug.glsl");
     writeln(ppdef);
-    assert(ppdef.blendState.length == 5);
+    assert(ppdef.blendState.length == 5);*/
 }
