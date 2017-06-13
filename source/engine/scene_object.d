@@ -5,7 +5,7 @@ import core.idtable : ID;
 import core.unique;
 import core.types;
 import core.aabb;
-//import engine.mesh : Mesh3D;
+import engine.mesh : Mesh3D;
 import std.container.array;
 
 struct SceneObject 
@@ -13,8 +13,8 @@ struct SceneObject
     ID eid;
     Unique!string name;
     SceneObject* parent;
-    //Mesh3D* mesh;    // Weak ref!
-    //Transform localTransform;
+    Mesh3D* mesh;    // Weak ref!
+    Transform localTransform;
     mat4 worldTransform;
     Array!(SceneObject*) children;
     AABB worldBounds;
@@ -26,7 +26,7 @@ struct SceneObject
     }
 
     void removeChild(SceneObject* obj) {
-
+        
     }
 
     void calculateWorldBounds() {

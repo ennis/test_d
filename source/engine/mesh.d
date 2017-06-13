@@ -19,3 +19,5 @@ struct Mesh(T) if (isVertexType!(T))
     int vertexCount;
     int indexCount;
 }
+
+alias Mesh3D = Mesh!Vertex3D;
