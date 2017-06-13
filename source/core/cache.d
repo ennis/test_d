@@ -15,7 +15,7 @@ class Cache
         cacheObjects[obj.path] = obj; 
     }
 
-    void get(T: CacheObject)(string path) const {
+    T get(T: CacheObject)(string path) const {
         auto obj = path in cacheObjects;
         if (auto o = cast(T)obj) {
             return o;
@@ -36,11 +36,11 @@ class CachedResource(T) : CacheObject
     T resource;
 }
 
-auto getCachedResource(T)(Cache cache, string path) {
-    return cache.get!(CachedResource!T)(path).resource;
+T* getCachedResource(T)(Cache cache, string path) {
+    return &cache.get!(CachedResource!T)(path).resource;
 }
 
-auto addCachedResource(T)(Cache cache, string path, T resource) {
+T* addCachedResource(T)(Cache cache, string path, T resource) {
     cache.add(new CachedResource!T(resource, path));
-    return resource;
+    return null;
 }
