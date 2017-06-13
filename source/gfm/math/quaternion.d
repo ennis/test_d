@@ -325,8 +325,8 @@ alias Quaternion!double quatd;
 
 unittest
 {
-    quatf a = quatf.fromAxis(tvec3f(1, 0, 0), 1);
-    quatf b = quatf.fromAxis(tvec3f(0, 1, 0), 0);
+    quatf a = quatf.fromAxis(vec3f(1, 0, 0), 1);
+    quatf b = quatf.fromAxis(vec3f(0, 1, 0), 0);
     a = a * b;
 
     quatf c = lerp(a, b, 0.5f);
@@ -334,5 +334,5 @@ unittest
     quatf e = slerp(a, b, 0.0f);
     quatd f = quatd(1.0, 4, 5.0, 6.0);
     quatf g = quatf.fromEulerAngles(-0.1f, 1.2f, -0.3f);
-    tvec3f ga = g.toEulerAngles();
+    vec3f ga = g.toEulerAngles();
 }

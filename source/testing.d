@@ -7,7 +7,7 @@ version (unittest)
     import glfw3;
     import glad.gl.loader;
 
-    void setupOpenGLContext()
+    /*void setupOpenGLContext()
     {
         debugMessage("Setting up OpenGL context for unittest...");
 	    if (!glfwInit())
@@ -26,5 +26,5 @@ version (unittest)
         glfwMakeContextCurrent(w);
         enforce(gladLoadGL(), "Could not load opengl functions");
         writefln("OpenGL Version %d.%d loaded", GLVersion.major, GLVersion.minor);
-    }
+    }*/
 }

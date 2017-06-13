@@ -340,22 +340,22 @@ alias Plane!double planed; /// 3D double plane.
 
 unittest
 {
-    auto p = planed(tvec4d(1.0, 2.0, 3.0, 4.0));
-    auto p2 = planed(tvec3d(1.0, 0.0, 0.0),
-                     tvec3d(0.0, 1.0, 0.0),
-                     tvec3d(0.0, 0.0, 1.0));
+    auto p = planed(vec4d(1.0, 2.0, 3.0, 4.0));
+    auto p2 = planed(vec3d(1.0, 0.0, 0.0),
+                     vec3d(0.0, 1.0, 0.0),
+                     vec3d(0.0, 0.0, 1.0));
 
-    assert(p2.isOn(tvec3d(1.0, 0.0, 0.0), 1e-7));
-    assert(p2.isFront(tvec3d(1.0, 1.0, 1.0)));
-    assert(p2.isBack(tvec3d(0.0, 0.0, 0.0)));
+    assert(p2.isOn(vec3d(1.0, 0.0, 0.0), 1e-7));
+    assert(p2.isFront(vec3d(1.0, 1.0, 1.0)));
+    assert(p2.isBack(vec3d(0.0, 0.0, 0.0)));
 }
 
 /// Plane intersection tests
 @nogc pure nothrow unittest
 {
-    void testR(planed p, ray3d r, bool shouldIntersect, double expectedDistance, tvec3d expectedPoint = tvec3d.init) pure nothrow @nogc
+    void testR(planed p, ray3d r, bool shouldIntersect, double expectedDistance, vec3d expectedPoint = vec3d.init) pure nothrow @nogc
     {
-        tvec3d point;
+        vec3d point;
         double distance;
         assert(r.intersect(p, point, distance) == shouldIntersect);
         assert(approxEqual(distance, expectedDistance));
@@ -363,22 +363,22 @@ unittest
             assert(approxEqual(point.v[], expectedPoint.v[]));
     }
     // ray facing plane
-    testR(planed(tvec4d(1.0, 0.0, 0.0, 1.0)), ray3d(tvec3d(2.0, 3.0, 4.0), tvec3d(-1.0, 0.0, 0.0)),
-        true, 1.0, tvec3d(1.0, 3.0, 4.0));
-    testR(planed(tvec4d(1.0, 1.0, 1.0, -sqrt(3.0))), ray3d(tvec3d(1.0, 1.0, 1.0), tvec3d(-1.0, -1.0, -1.0).normalized()),
-        true, 2.0*sqrt(3.0), tvec3d(-1.0, -1.0, -1.0));
+    testR(planed(vec4d(1.0, 0.0, 0.0, 1.0)), ray3d(vec3d(2.0, 3.0, 4.0), vec3d(-1.0, 0.0, 0.0)),
+        true, 1.0, vec3d(1.0, 3.0, 4.0));
+    testR(planed(vec4d(1.0, 1.0, 1.0, -sqrt(3.0))), ray3d(vec3d(1.0, 1.0, 1.0), vec3d(-1.0, -1.0, -1.0).normalized()),
+        true, 2.0*sqrt(3.0), vec3d(-1.0, -1.0, -1.0));
     // ray facing away
-    testR(planed(tvec4d(1.0, 0.0, 0.0, 1.0)), ray3d(tvec3d(2.0, 3.0, 4.0), tvec3d(1.0, 0.0, 0.0)),
+    testR(planed(vec4d(1.0, 0.0, 0.0, 1.0)), ray3d(vec3d(2.0, 3.0, 4.0), vec3d(1.0, 0.0, 0.0)),
         false, -1.0);
-    testR(planed(tvec4d(1.0, 0.0, 0.0, 5.0)), ray3d(tvec3d(2.0, 3.0, 4.0), tvec3d(-1.0, 0.0, 0.0)),
+    testR(planed(vec4d(1.0, 0.0, 0.0, 5.0)), ray3d(vec3d(2.0, 3.0, 4.0), vec3d(-1.0, 0.0, 0.0)),
         false, -3.0);
     // ray parallel
-    testR(planed(tvec4d(0.0, 0.0, 1.0, 1.0)), ray3d(tvec3d(1.0, 2.0, 3.0), tvec3d(1.0, 0.0, 0.0)),
+    testR(planed(vec4d(0.0, 0.0, 1.0, 1.0)), ray3d(vec3d(1.0, 2.0, 3.0), vec3d(1.0, 0.0, 0.0)),
         false, double.infinity);
     
-    void testS(planed p, seg3d s, bool shouldIntersect, double expectedProgress, tvec3d expectedPoint = tvec3d.init) pure nothrow @nogc
+    void testS(planed p, seg3d s, bool shouldIntersect, double expectedProgress, vec3d expectedPoint = vec3d.init) pure nothrow @nogc
     {
-        tvec3d point;
+        vec3d point;
         double progress;
         assert(s.intersect(p, point, progress) == shouldIntersect);
         assert(approxEqual(progress, expectedProgress));
@@ -386,10 +386,10 @@ unittest
             assert(approxEqual(point.v[], expectedPoint.v[]));
     }
     // segment crossing plane
-    testS(planed(tvec4d(1.0, 0.0, 0.0, 2.0)), seg3d(tvec3d(1.0, 2.0, 3.0), tvec3d(3.0, 4.0, 5.0)),
-        true, 0.5, tvec3d(2.0, 3.0, 4.0));
+    testS(planed(vec4d(1.0, 0.0, 0.0, 2.0)), seg3d(vec3d(1.0, 2.0, 3.0), vec3d(3.0, 4.0, 5.0)),
+        true, 0.5, vec3d(2.0, 3.0, 4.0));
     // segment too short
-    testS(planed(tvec4d(1.0, 0.0, 0.0, 0.0)), seg3d(tvec3d(1.0, 2.0, 3.0), tvec3d(3.0, 4.0, 5.0)),
+    testS(planed(vec4d(1.0, 0.0, 0.0, 0.0)), seg3d(vec3d(1.0, 2.0, 3.0), vec3d(3.0, 4.0, 5.0)),
         false, -0.5);
 }
 

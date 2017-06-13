@@ -505,7 +505,7 @@ unittest
 {
     static assert(isVector!vec2f);
     static assert(isVector!vec3d);
-    static assert(isVector!(vec4!real));
+    static assert(isVector!(tvec4!real));
     static assert(!isVector!float);
 }
 
@@ -607,9 +607,9 @@ private
 }
 
 /// Element-wise absolute value.
-@nogc Vector!(T, N) abs(T, int N)(const Vector!(T, N) a) pure nothrow
+@nogc Vector!(T, N) absByElem(T, int N)(const Vector!(T, N) a) pure nothrow
 {
-    import std.algorithm: abs;
+    import std.math: abs;
     Vector!(T, N) res = void;
     mixin(generateLoopCode!("res.v[@] = abs(a.v[@]);", N)());
     return res;

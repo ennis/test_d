@@ -18,7 +18,14 @@ struct Vertex3D {
   vec2 texcoords;
 }
 
-enum isVertexType(T) = is(T == struct) && is(typeof(() { T val; val.position; } ()));
+template isVertexType(T)
+{
+  enum isVertexType = is(T == struct) && is(typeof(() { T val = T.init; auto p = val.position; }));
+}
+
+static assert(isVertexType!Vertex2D);
+static assert(isVertexType!Vertex2DTex);
+static assert(isVertexType!Vertex3D);
 
 AABB getMeshAABB(T)(T[] vertices)
 { 
