@@ -39,7 +39,7 @@ void draw(DrawCommand, Pipeline, Args...)(Framebuffer fbo, DrawCommand cmd, Pipe
 {
     StateGroup sg;
     // 1. bind program & draw states (~= pipeline state)
-    shader.bind(sg);
+    pipeline.bind(sg);
     // 1.1. bind framebuffer
     RenderTarget(fbo).bind(sg);
     // 2. bind dynamic args

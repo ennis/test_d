@@ -30,19 +30,19 @@ struct Uniform(T)
         {
             glProgramUniform1f(sg.program, toStringz(name), value);
         }
-        else static if (is(T == int))
+        static if (is(T == int))
         {
             glProgramUniform1i(sg.program, toStringz(name), value);
         }
-        else static if (is(T == Vector!(float, N), int N))
+        static if (is(T == Vector!(U, N), U=float, int N))
         {
             mixin("glProgramUniform" ~ to!string(N) ~ "fv(sg.program, loc, 1, value.ptr);");
         }
-        else static if (is(T == Vector!(int, N), int N))
+        static if (is(T == Vector!(U, N), U=int, int N))
         {
             mixin("glProgramUniform" ~ to!string(N) ~ "iv(sg.program, loc, 1, value.ptr);");
         }
-        else static if (is(T == Matrix!(float, R, C), int R, int C))
+        static if (is(T == Matrix!(float, R, C), int R, int C))
         {
             static assert(R >= 2 && C >= 2 && R <= 4 && C <= 4);
             static if (R == C)

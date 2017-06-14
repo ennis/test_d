@@ -9,16 +9,16 @@ auto uploadFrameData(T)(ref T data, size_t alignment = -1)
     Context ctx = getGfxContext();
     UploadBuffer uploadBuffer = ctx.uploadBuffer;
     // First, reclaim data from frame N-<max-frames-in-flight> (guaranteed to be done)
-    buf.reclaim(ctx.currentFrameIndex - ctx.config.maxFramesInFlight + 1);
+    uploadBuffer.reclaim(ctx.currentFrameIndex - ctx.config.maxFramesInFlight + 1);
     auto expirationDate = ctx.currentFrameIndex+1;
 
-    const(void*) ptr;
+    const(void)* ptr;
     size_t len;
 
     static if (is(T : U[], U)) {
         static assert(is(U == struct));
         ptr = data.ptr;
-        size = data.len * U.sizeof;
+        len = data.length * U.sizeof;
 
     }
     else {
@@ -26,7 +26,7 @@ auto uploadFrameData(T)(ref T data, size_t alignment = -1)
         // (also: check inside the struct for pointers?)
         static assert(is(T == struct));
         ptr = &data;
-        size = T.sizeof;
+        len = T.sizeof;
     }
 
     if (alignment == -1) {

@@ -149,7 +149,7 @@ public:
 
     //Framebuffer getDefaultFramebuffer() { return screenFbo; }
 
-    @property UploadBuffer uploadBuffer() return { uploadBuffer_; }
+    @property UploadBuffer uploadBuffer() { return  uploadBuffer_; }
 
 private:
     GLImplementationLimits implLimits;
