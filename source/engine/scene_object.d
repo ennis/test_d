@@ -42,7 +42,6 @@ struct SceneObject
     void removeChild(SceneObject* obj)
     {
         import std.algorithm.mutation : remove;
-
         children.length = remove!(a => a == obj)(children[]).length;
     }
 
@@ -93,7 +92,7 @@ class SceneObjectComponents : ComponentManager!SceneObject
         auto pparent = parent in components;
         auto pchild = child in components;
         if (pparent && pchild) {
-            pparent.addChild(pchild);
+            (*pparent).addChild(*pchild);
         }
     }
 }

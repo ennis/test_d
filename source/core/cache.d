@@ -41,6 +41,7 @@ T* getCachedResource(T)(Cache cache, string path) {
 }
 
 T* addCachedResource(T)(Cache cache, string path, T resource) {
-    cache.add(new CachedResource!T(resource, path));
-    return null;
+    auto res = new CachedResource!T(resource, path);
+    cache.add(res);
+    return &res.resource;
 }

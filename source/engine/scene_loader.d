@@ -73,7 +73,9 @@ struct AssimpMeshImporter
     void importNode(const(aiScene)* scene, aiNode* node, SceneObject* parent)
     {
         auto id = entities_.createID();
-        //auto thisNode = 
+        auto thisNode = sceneObjects_.add(id);
+        thisNode.eid = id;
+        thisNode.name = node
     }
 
 
