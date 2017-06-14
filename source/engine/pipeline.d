@@ -106,8 +106,19 @@ class GraphicsPipeline : GPUPipeline
         desc = desc_;
     }
 
+    this(Cache cache_, string path) 
+    {
+        import std.string : lastIndexOf;
+        auto split = lastIndexOf(path, "$");
+        if (split == -1) {
+            assert(false);
+        }
+        this(cache_, path[0..split], path[split+1..$]);
+    }
+
     this(Cache cache_, string path, string subpath)
     {
+        debugMessage("loading pipeline %s, shader %s", path, subpath);
         origPath = path;
         origSubpath = subpath;
         cache = cache_;

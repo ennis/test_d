@@ -4,17 +4,20 @@ import core.cache;
 import core.idtable;
 import core.vertex;
 import core.types;
+import core.dbg;
 import engine.scene;
 import engine.scene_object;
 import engine.mesh;
 import derelict.assimp3.assimp;
+import core.aabb;
 
-struct AssimpMeshImporter 
+class AssimpSceneImporter 
 {
     string path_;
     IDTable entities_;
     SceneObjectComponents sceneObjects_;
     Cache cache_;
+    SceneObject* parent_;
 
     this(string path,
          IDTable entities, 
@@ -27,11 +30,11 @@ struct AssimpMeshImporter
         cache_ = cache;
     }
 
-    private Mesh3D* importMesh(const(aiScene)* aiscene, int index, Cache cache)
+    private Mesh3D* importMesh(const(aiScene)* aiscene, int index, out AABB aabb)
     {
         import std.conv : to;
         auto meshName = path_ ~ ":mesh(" ~ to!string(index) ~ ")";
-        auto cachedMesh = getCachedResource!(Mesh3D)(cache, meshName);
+        auto cachedMesh = getCachedResource!(Mesh3D)(cache_, meshName);
         if (!cachedMesh) {
             auto aimesh = aiscene.mMeshes[index];
             Vertex3D[] vertices;
@@ -65,24 +68,86 @@ struct AssimpMeshImporter
                 indices[i * 3 + 1] = aimesh.mFaces[i].mIndices[1];
                 indices[i * 3 + 2] = aimesh.mFaces[i].mIndices[2];
             }
-            cachedMesh = addCachedResource(cache, meshName, Mesh3D(vertices, indices));
+            aabb = getMeshAABB(vertices);
+            cachedMesh = addCachedResource(cache_, meshName, Mesh3D(vertices, indices));
         }
         return cachedMesh;
     }
 
-    void importNode(const(aiScene)* scene, aiNode* node, SceneObject* parent)
+    SceneObject* importNode(const(aiScene)* scene, const(aiNode)* node, SceneObject* parent)
     {
+        import std.string : fromStringz;
         auto id = entities_.createID();
-        auto thisNode = sceneObjects_.add(id);
+        SceneObject* thisNode = sceneObjects_.add(id);
         thisNode.eid = id;
-        thisNode.name = node
+        thisNode.name = node.mName.data[0..node.mName.length].idup;
+        thisNode.parent = parent;
+
+        aiVector3D scaling;
+        aiVector3D position;
+        aiQuaternion rotation;
+        aiDecomposeMatrix(&node.mTransformation, &scaling, &rotation, &position);
+        thisNode.localTransform.position.x = position.x;
+        thisNode.localTransform.position.y = position.y;
+        thisNode.localTransform.position.z = position.z;
+        thisNode.localTransform.rotation.x = rotation.x;
+        thisNode.localTransform.rotation.y = rotation.y;
+        thisNode.localTransform.rotation.z = rotation.z;
+        thisNode.localTransform.rotation.w = rotation.w;
+        thisNode.localTransform.scaling.x = scaling.x;
+        thisNode.localTransform.scaling.y = scaling.y;
+        thisNode.localTransform.scaling.z = scaling.z;
+        if (node.mNumMeshes == 1) {
+            thisNode.mesh = importMesh(scene, node.mMeshes[0], thisNode.meshBounds);
+        }
+        else if (node.mNumMeshes > 1) {
+            foreach (meshid; node.mMeshes[0..node.mNumMeshes]) 
+            {
+                // create sub-objects for the meshes
+                auto sub = entities_.createID();
+                SceneObject* subObj = sceneObjects_.add(sub);
+                subObj.eid = sub;
+                subObj.parent = thisNode;
+                subObj.mesh = importMesh(scene, meshid, subObj.meshBounds);
+            }
+        }
+        foreach (child; node.mChildren[0..node.mNumChildren]) {
+            importNode(scene, child, thisNode);
+        }
+        if (parent) {
+            parent.children.insertBack(thisNode);
+        }
+        return thisNode;
     }
 
+    SceneObject* importRootNode(SceneObject* parent)
+    {
+        import std.string : toStringz;
+        const(aiScene)* scene = aiImportFile(path_.toStringz(), 
+            aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph |
+            aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
+            aiProcess_CalcTangentSpace | aiProcess_SortByPType);
+        if (!scene) {
+            errorMessage("failed to load scene (%s): %s", path_, aiGetErrorString());
+            return null;
+        }
 
+        auto rootSceneObj = importNode(scene, scene.mRootNode, parent_);
+        debugMessage("AssimpSceneImporter.importRootNode: imported %s meshes", scene.mNumMeshes);
+        return rootSceneObj;        
+    }
 }
 
-void importScene(string path, Cache cache, IDTable idTable, SceneObjectComponents sceneObjects)
+SceneObject* importScene(
+        string path, 
+        IDTable idTable, 
+        SceneObjectComponents sceneObjects,
+        SceneObject* parent,
+        Cache cache)
 {
+    import std.string : toStringz;
 
-
+    AssimpSceneImporter sceneImporter = new AssimpSceneImporter(path, idTable, sceneObjects,  cache);
+    auto rootSceneObj = sceneImporter.importRootNode(parent);
+    return rootSceneObj;
 }

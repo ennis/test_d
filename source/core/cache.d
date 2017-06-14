@@ -45,3 +45,10 @@ T* addCachedResource(T)(Cache cache, string path, T resource) {
     cache.add(res);
     return &res.resource;
 }
+
+private __gshared Cache theCache = new Cache();
+
+Cache getDefaultCache()
+{
+    return theCache;
+}

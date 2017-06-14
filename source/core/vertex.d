@@ -29,7 +29,7 @@ static assert(isVertexType!Vertex3D);
 
 AABB getMeshAABB(T)(T[] vertices)
 { 
-  static assert (isVertexType(T));
+  static assert (isVertexType!(T));
   AABB aabb;
   // init AABB to reasonably unreasonable values
   aabb.xmin = float.max;
