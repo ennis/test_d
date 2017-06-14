@@ -68,6 +68,8 @@ public:
     {
         cfg = cfg_;
         setDebugCallback();
+        frameFence = new Fence();
+        uploadBuffer_ = new UploadBuffer(cfg_.defaultUploadBufferSize);
         //frameFence = Fence{0};
         // TODO query all implementation limits
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &implLimits.uniform_buffer_alignment);
@@ -147,6 +149,8 @@ public:
 
     //Framebuffer getDefaultFramebuffer() { return screenFbo; }
 
+    @property UploadBuffer uploadBuffer() return { uploadBuffer_; }
+
 private:
     GLImplementationLimits implLimits;
     Config cfg;
@@ -154,6 +158,7 @@ private:
     long frameIndex;
     int width;
     int height;
+    UploadBuffer uploadBuffer_;
     //Framebuffer screenFbo;
     // Graphics frame capture
     long nextFrameCapture = -1;

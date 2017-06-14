@@ -12,7 +12,7 @@ struct DrawArrays {
     int first;
     int count;
 
-    void execute(ref StateGroup sg) const
+    void bind(ref StateGroup sg) const
     {
         bindStateGroup(sg);
         glDrawArrays(primitiveType, first, count);
@@ -25,7 +25,7 @@ struct DrawIndexed {
     int count;
     int baseVertex;
 
-    void execute(ref StateGroup sg) const
+    void bind(ref StateGroup sg) const
     {
         bindStateGroup(sg);
         auto indexStride = (sg.uniforms.indexBufferType == GL_UNSIGNED_SHORT) ? 2 : 4;
@@ -49,7 +49,7 @@ void draw(DrawCommand, Pipeline, Args...)(Framebuffer fbo, DrawCommand cmd, Pipe
     }
     // 3. call render command
     // The render command is in charge of binding the state group to the pipeline
-    cmd.execute(sg);
+    cmd.bind(sg);
 }
 
 void clear(Framebuffer fb, vec4 color) {

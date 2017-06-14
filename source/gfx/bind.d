@@ -6,6 +6,7 @@ import gfx.sampler;
 import gfx.buffer;
 import gfx.upload_buffer;
 import gfx.framebuffer;
+import gfx.context;
 import core.types;
 
 enum isPipelineBindable(T) = is(typeof(() {
@@ -39,7 +40,7 @@ struct Uniform(T)
         }
         else static if (is(T == Vector!(int, N), int N))
         {
-            mixin("glProgramUniform" ~ to!string(N) ~ "fv(sg.program, loc, 1, value.ptr);");
+            mixin("glProgramUniform" ~ to!string(N) ~ "iv(sg.program, loc, 1, value.ptr);");
         }
         else static if (is(T == Matrix!(float, R, C), int R, int C))
         {
@@ -61,6 +62,12 @@ struct Uniform(T)
 alias UniformVec2 = Uniform!(vec2);
 alias UniformVec3 = Uniform!(vec3);
 alias UniformVec4 = Uniform!(vec4);
+alias UniformIVec2 = Uniform!(ivec2);
+alias UniformIVec3 = Uniform!(ivec3);
+alias UniformIVec4 = Uniform!(ivec4);
+alias UniformMat2 = Uniform!(mat2);
+alias UniformMat3 = Uniform!(mat3);
+alias UniformMat4 = Uniform!(mat4);
 
 struct TextureUnit
 {
@@ -134,6 +141,7 @@ struct RenderTarget
         sg.scissorRects[0] = ScissorRect(0, 0, fbo.width, fbo.height);
     }
 }
+
 
 unittest
 {
