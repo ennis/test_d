@@ -10,11 +10,11 @@ struct AABB
   float ymax;
   float zmax;
 
-  float width() const { return xmax - xmin; }
-  float height() const { return ymax - ymin; }
-  float depth() const { return zmax - zmin; }
+  @property float width() const pure nothrow @nogc { return xmax - xmin; }
+  @property float height() const pure nothrow @nogc { return ymax - ymin; }
+  @property float depth() const pure nothrow @nogc { return zmax - zmin; }
 
-  AABB transform(ref const(mat4) m) const {
+  AABB transform(ref const(mat4) m) const pure nothrow @nogc {
     auto xa = m.column(0) * xmin;
 	  auto xb = m.column(0) * xmax;
 
@@ -30,7 +30,7 @@ struct AABB
 	  return AABB(vmin.x, vmin.y, vmin.z, vmax.x, vmax.y, vmax.z);
   }
 
-  ref AABB unionWith(ref const(AABB) other) {
+  ref AABB unionWith(ref const(AABB) other) nothrow @nogc{
     import std.algorithm : min, max;
     xmin = min(xmin, other.xmin);
 	  xmax = max(xmax, other.xmax);

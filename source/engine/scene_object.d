@@ -12,7 +12,7 @@ import std.container.array;
 struct SceneObject
 {
     ID eid;
-    Unique!string name;
+    string name;
     SceneObject* parent;
     Mesh3D* mesh; // Weak ref!
     Transform localTransform;

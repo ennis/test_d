@@ -17,7 +17,6 @@ class AssimpSceneImporter
     IDTable entities_;
     SceneObjectComponents sceneObjects_;
     Cache cache_;
-    SceneObject* parent_;
 
     this(string path,
          IDTable entities, 
@@ -36,6 +35,7 @@ class AssimpSceneImporter
         auto meshName = path_ ~ ":mesh(" ~ to!string(index) ~ ")";
         auto cachedMesh = getCachedResource!(Mesh3D)(cache_, meshName);
         if (!cachedMesh) {
+            debugMessage("Importing mesh %s", meshName);
             auto aimesh = aiscene.mMeshes[index];
             Vertex3D[] vertices;
             uint[] indices;
@@ -82,6 +82,7 @@ class AssimpSceneImporter
         thisNode.eid = id;
         thisNode.name = node.mName.data[0..node.mName.length].idup;
         thisNode.parent = parent;
+        debugMessage("Importing node %s", thisNode.name);
 
         aiVector3D scaling;
         aiVector3D position;
@@ -123,16 +124,19 @@ class AssimpSceneImporter
     SceneObject* importRootNode(SceneObject* parent)
     {
         import std.string : toStringz;
+        debugMessage("aiImportFile %s", path_);
+        DerelictASSIMP3.load();
         const(aiScene)* scene = aiImportFile(path_.toStringz(), 
             aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph |
             aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
             aiProcess_CalcTangentSpace | aiProcess_SortByPType);
         if (!scene) {
-            errorMessage("failed to load scene (%s): %s", path_, aiGetErrorString());
+            import std.string : fromStringz;
+            errorMessage("failed to load scene (%s): %s", path_, aiGetErrorString().fromStringz);
             return null;
         }
 
-        auto rootSceneObj = importNode(scene, scene.mRootNode, parent_);
+        auto rootSceneObj = importNode(scene, scene.mRootNode, parent);
         debugMessage("AssimpSceneImporter.importRootNode: imported %s meshes", scene.mNumMeshes);
         return rootSceneObj;        
     }
@@ -146,7 +150,7 @@ SceneObject* importScene(
         Cache cache)
 {
     import std.string : toStringz;
-
+    debugMessage("idTable=%s,sceneObjects=%s,parent=%s,cache=%s", idTable, sceneObjects, parent, cache);
     AssimpSceneImporter sceneImporter = new AssimpSceneImporter(path, idTable, sceneObjects,  cache);
     auto rootSceneObj = sceneImporter.importRootNode(parent);
     return rootSceneObj;

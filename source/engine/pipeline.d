@@ -145,7 +145,19 @@ class GraphicsPipeline : GPUPipeline
         // create the program
         prog = Program.create(Program.Desc(ss.vertexShader.source, ss.fragmentShader.source,
                 ss.geometryShader.source, ss.tessControlShader.source, ss.tessEvalShader.source));
+        // create the VAO
+        vao = new VertexArray(desc.layout);
         // all done!
+    }
+
+    void bind(ref StateGroup sg) 
+    {
+        sg.program = prog.object;
+        sg.rasterizerState = desc.rasterizerState;
+        sg.depthStencilState = desc.depthStencilState;
+        sg.barrierBits = desc.barrierBits;
+        sg.blendStates = desc.blendState;
+        sg.vertexArray = vao.object;
     }
 
     string origPath;
@@ -154,6 +166,8 @@ class GraphicsPipeline : GPUPipeline
     Desc desc;
     // Shared
     Program prog;
+    // Not shared
+    VertexArray vao;
 }
 
 unittest

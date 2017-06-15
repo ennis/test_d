@@ -17,10 +17,12 @@ public:
   this()
   {}
 
-  this(VertexAttribute[] attribs)
-  {}
+  this(const(VertexAttribute)[] attribs)
+  {
+    initialize(attribs);
+  }
 
-  void initialize(VertexAttribute[] attribs)
+  void initialize(const(VertexAttribute)[] attribs)
   {
     immutable MaxAttribs = 16; 
     assert(attribs.length < getGfxContext().implementationLimits.max_vertex_attributes);
@@ -37,7 +39,9 @@ public:
 
   override void release()
   {
-    if (obj)
+    if (obj) {
       glDeleteVertexArrays(1, &obj); 
+      obj = 0;
+    }
   }
 }

@@ -11,6 +11,11 @@ import glad.gl.loader;
 import std.exception;
 import core.memory;
 import core.unique;
+import core.idtable;
+import engine.scene_loader;
+import engine.scene;
+import engine.scene_object;
+import core.cache;
 
 import imgui_glfw;
 import derelict.imgui.imgui;
@@ -100,7 +105,27 @@ void igGenericGUI(T)(string name, auto ref T val) if (is(T == struct))
 	}
 }
 
+class MainScene 
+{
+public:
+	this(string path) 
+	{
+		entities = new IDTable;
+		sceneObjects = new SceneObjectComponents;
+		cache = getDefaultCache();
+		rootObject = importScene(path, entities, sceneObjects, null, cache);
+	}
 
+	void render() 
+	{
+	}
+
+private:
+	IDTable entities;
+	Cache cache;
+	SceneObjectComponents sceneObjects;
+	SceneObject* rootObject;
+}
 
 void main()
 {
@@ -128,16 +153,6 @@ void main()
 	enforce(gladLoadGL(), "Could not load opengl functions");
 	writefln("OpenGL Version %d.%d loaded", GLVersion.major, GLVersion.minor);
 
-	// set event handlers
-	/*glfwSetWindowSizeCallback(w_, WindowSizeHandler);
-	glfwSetCursorEnterCallback(w_, CursorEnterHandler);
-	glfwSetMouseButtonCallback(w_, MouseButtonHandler);
-	glfwSetScrollCallback(w_, ScrollHandler);
-	glfwSetCursorPosCallback(w_, CursorPosHandler);
-	glfwSetCharCallback(w_, CharHandler);
-	glfwSetKeyCallback(w_, KeyHandler);*/
-	//glfwSetPointerEventCallback(w_, PointerEventHandler);
-
 	// init gfx context
 	auto ctx = new Context(Context.Config(3,3*1024*1024));
 
@@ -145,44 +160,18 @@ void main()
 	auto tex = Texture.create2D(ImageFormat.R8G8B8A8_UNORM, 16384, 16384, 1, 0,
 								Texture.Options.SparseStorage);
 
+	MainScene mainScene = new MainScene("data/scenes/sponza/sponza.obj");
+
 	// test allocation
-	immutable(long) initial_entities = 60_000;
-	immutable(long) turnover = 100;
-	import std.conv : to;
-
-	Unique!string str = "test";
-
-	debugMessage("Creating %s entities...", initial_entities);
-	auto entities = Unique!(Entity[])(initial_entities);
-	// initialize
-	foreach (i, ref ent; entities)
-	{
-		//if (i < 10)
-		ent.name = "entity_" ~ to!string(i);
-	}
-	debugMessage("Done");
-
-	int start_index = 0;
-
 	double t = 0.0;
-
 	bool show_test_window = true;
     float[3] clear_color = [0.3f, 0.4f, 0.8f];
 
 	DerelictImgui.load();
 	igImplGlfwGL3_Init(w, true);
-
 	int screenW;
 	int screenH;
 	glfwGetFramebufferSize(w, &screenW, &screenH);
-
-	static struct Test 
-	{
-		int a;
-		int b;
-		float c;
-	} 
-	Component tt;
 
 	while (!glfwWindowShouldClose(w))
 	{
@@ -209,7 +198,7 @@ void main()
 			if (igButton("Test Window")) show_test_window = !show_test_window;
 			igText("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 			igText("Instantanous %.3f ms/frame (%.1f FPS)", tdiff * 1000.0f, 1.0f / tdiff);
-			igGenericGUI("Test reflection", tt);
+			//igGenericGUI("Test reflection", tt);
 		}
 
 		if (show_test_window)
@@ -221,18 +210,6 @@ void main()
 		//glViewport(0, 0, screenW, screenH);
 		igRender();
 		glfwSwapBuffers(w);
-
-		// GC pressure test
-		// create 'turnover' entities, delete 'turnover' 
-		foreach (i, ref ent; entities[start_index .. (start_index + turnover)])
-		{
-			auto ii = (start_index + i) % initial_entities;
-			entities[ii].name = "entity_" ~ to!string(ii);
-			//writeln("Name: " ~ entities[i].name);
-		}
-
-		start_index++;
-		//start_index = start_index % initial_entities;
 	}
 
 	igImplGlfwGL3_Shutdown();

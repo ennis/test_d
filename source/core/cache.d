@@ -37,7 +37,9 @@ class CachedResource(T) : CacheObject
 }
 
 T* getCachedResource(T)(Cache cache, string path) {
-    return &cache.get!(CachedResource!T)(path).resource;
+    CachedResource!T wrapper = cache.get!(CachedResource!T)(path);
+    if (wrapper) return &wrapper.resource;
+    return null;
 }
 
 T* addCachedResource(T)(Cache cache, string path, T resource) {

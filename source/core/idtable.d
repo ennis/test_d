@@ -14,6 +14,7 @@ class IDTable
 public:
     ID createID()
     {
+        import core.dbg : debugMessage;
         ID id;
         if (freeIDs.empty()) {
             liveIDs.insertBack(ID(liveIDs.length + (1L << 32)));
@@ -22,16 +23,19 @@ public:
             id = freeIDs.back;
             freeIDs.removeBack();
         }
+        debugMessage("creating ID %s:%s", id.index, id.generation);
         return id;
     }
 
     void deleteID(ID id)
     {
+        import core.dbg : debugMessage;
         immutable idx = id.index;
         // increase generation count
         liveIDs[idx] += 1L << 32;
         // add to free list
         freeIDs.insertBack(liveIDs[idx]);
+        debugMessage("deleting ID %s:%s", id.index, id.generation);
     }
 
     @property auto length() const { return liveIDs.length; }
