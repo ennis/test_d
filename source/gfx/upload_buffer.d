@@ -3,6 +3,8 @@ import gfx.buffer;
 
 import gfm.core.queue;
 
+import core.dbg;
+
 class UploadBuffer
 {
 public:
@@ -21,9 +23,12 @@ public:
       ulong expirationDate, out Buffer.Slice slice)
   { 
     import core.stdc.string : memcpy;
-    if (!allocate(expirationDate, size, alignment, slice))
+    if (!allocate(expirationDate, size, alignment, slice)) {
+      errorMessage("upload failed");
       return false;
+    }
     // copy data
+    debugMessage("upload buffer: %s (%s bytes) -> %s", data, size, cast(char *)mapped_region + slice.offset);
     memcpy(cast(char *)mapped_region + slice.offset, data, size);
     return true;
   }
@@ -31,8 +36,10 @@ public:
   bool allocate(ulong expirationDate, ulong size, ulong alignment, out Buffer.Slice slice)
   {
     size_t offset = 0;
-    if (!tryAllocateContiguousFreeSpace(expirationDate, size, alignment, offset))
+    if (!tryAllocateContiguousFreeSpace(expirationDate, size, alignment, offset)) {
+      errorMessage("allocate failed");
       return false;
+    }
     slice.obj = buffer.object;
     slice.offset = offset;
     slice.size = size;
@@ -41,6 +48,15 @@ public:
 
   void reclaim(ulong date)
   {
+    debugMessage("reclaiming data before frame %s", date);
+    while (fencedRegions.length &&
+          fencedRegions.front.expirationDate <= date) {
+      auto r = fencedRegions.front;
+      begin_ptr = r.end_ptr; // there may be some alignment space that we would
+                            // want to reclaim
+      used -= r.end_ptr - r.begin_ptr;
+      fencedRegions.popFront();
+    }
   }
 
 private:

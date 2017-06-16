@@ -5,6 +5,7 @@ import gfx.framebuffer;
 import gfx.state_group;
 import gfx.texture;
 import gfx.context;
+import core.dbg;
 import opengl;
 
 struct DrawArrays {
@@ -39,12 +40,15 @@ void draw(DrawCommand, Pipeline, Args...)(Framebuffer fbo, DrawCommand cmd, Pipe
 {
     StateGroup sg;
     // 1. bind program & draw states (~= pipeline state)
+    debugMessage("bind %s", pipeline);
     pipeline.bind(sg);
     // 1.1. bind framebuffer
+    debugMessage("bind %s", fbo);
     RenderTarget(fbo).bind(sg);
     // 2. bind dynamic args
     sg.mask = StateGroupMask.All;
     foreach (ref a; args) {
+        debugMessage("bind %s", a);
         a.bind(sg);
     }
     // 3. call render command

@@ -134,7 +134,9 @@ public:
 		camCtl.setAspectRatio(cast(float)target.width / cast(float)target.height);
 		camCtl.focusOnObject(*rootObject);
 		auto cam = camCtl.getCamera();
+		debugMessage("cam=%s", cam);
 		foreach(ref s; sceneObjects.components) {
+			debugMessage("rendering object %s", s);
 			drawMesh(target, cam, *s.mesh, s.worldTransform, vec4(0.0f,1.0f,0.0f,1.0f));
 		}
 	}

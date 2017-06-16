@@ -63,7 +63,7 @@ string preprocessShaderSource(string source, string path,
   ShaderStage enabledShaderStages = cast(ShaderStage)0;
   preprocessGLSL(outBody, source, glsl_version, enabledShaderStages, &thisFile,
                  sourceMap);
-  debugMessage("PP: Enabled stages: %s", enabledShaderStages.stringof);
+  debugMessage("PP: Enabled stages: %s", enabledShaderStages);
   // This source does not define a shader of the specified type
   if (!enabledShaderStages & stage) 
   {
@@ -126,9 +126,13 @@ string preprocessShaderSource(string source, string path,
 }
 
 
-auto directivesRegexp = ctRegex!(
-        `((?:\s*#include\s+"(.*)"\s*?|\s*#version\s+([0-9]*)\s*?|\s*#pragma\s+(.*)\s*?|(.*))(?:\n|$))`);
-auto shaderStagePragmaRegexp = ctRegex!(`(^stages\s*\(\s*(\w+)(?:\s*,\s*(\w+))*\s*\)\s*?$)`);
+auto directivesRegexp = regex(
+    [`^\s*#include\s+"(.*)"\s*?$`, 
+    `^\s*#version\s+([0-9]*)\s*?$`, 
+    `^\s*#pragma\s+(.*)\s*?$`, 
+    `^(.*)$`], "m");
+
+auto shaderStagePragmaRegexp = ctRegex!(`^stages\s*\(\s*(\w+)(?:\s*,\s*(\w+))*\s*\)\s*?$`);
 
 void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
         ref ShaderStage enabledShaderStages, const IncludeFile* thisFile,
@@ -140,6 +144,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
 
     int thisFileIndex = cast(int) sourceMap.length;
     sourceMap ~= SourceMapEntry(thisFileIndex, thisFile.path);
+    debugMessage("preprocessGLSL %s", thisFile.path);
     auto dir = dirName(thisFile.path);
 
     int curLine = 1;
@@ -147,6 +152,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
 
     foreach (m; matchAll(source, directivesRegexp))
     {
+        debugMessage("which pattern=%s", m.whichPattern);
         final switch (m.whichPattern())
         {
         case 1: // matched include directive
@@ -154,6 +160,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
                 auto includePath = m[1];
                 // prepend
                 includePath = buildPath(dir, includePath);
+                debugMessage("includePath %s", includePath);
 
                 string includeText;
                 try
@@ -177,7 +184,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
 
         case 2: // version directive
         {
-                auto versionStr = m[2];
+                auto versionStr = m[1];
                 try
                 {
                     int versionNum = to!int(versionStr);
@@ -194,7 +201,8 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
             }
         case 3: // pragma directive
         {
-                auto pragmaStagesMatches = matchAll(m[3], shaderStagePragmaRegexp);
+            debugMessage("matched pragma directive %s", m[1]);
+                auto pragmaStagesMatches = matchAll(m[1], shaderStagePragmaRegexp);
                 if (!pragmaStagesMatches.empty())
                 {
                     foreach (i; 1 .. pragmaStagesMatches.front.length)
@@ -221,7 +229,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
                             enabledShaderStages |= ShaderStage.Compute;
                             break;
                         default:
-                            warningMessage("([%s] %s:%s) unknown shader stage in #pragma stages(...) directive: {}",
+                            warningMessage("([%s] %s:%s) unknown shader stage in #pragma stages(...) directive: %s",
                                     thisFileIndex, thisFile.path, curLine, stageMatch);
                             break;
                         }
@@ -235,7 +243,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
                 ppout ~= "#line " ~ to!string(curLine) ~ " " ~ to!string(thisFileIndex) ~ '\n';
                 shouldOutputLineDirective = false;
             }
-            ppout ~= m[4];
+            ppout ~= m[1];
             curLine++;
             break;
         }

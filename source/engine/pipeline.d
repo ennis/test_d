@@ -54,10 +54,13 @@ class GraphicsPipeline : GPUPipeline
             if (luadesc.shaderFile.length)
             {
                 import std.file : readText;
+                import std.path : dirName, buildPath;
 
                 try
                 {
-                    luadesc.shaderSource = readText(luadesc.shaderFile);
+                    auto fullShaderPath =  buildPath(dirName(path), luadesc.shaderFile);
+                    luadesc.shaderFile = fullShaderPath;
+                    luadesc.shaderSource = readText(fullShaderPath);
                 }
                 catch (Exception e)
                 {
@@ -75,7 +78,7 @@ class GraphicsPipeline : GPUPipeline
 
             destroy(lua);
 
-            import std.algorithm.mutation : move;
+            //import std.algorithm.mutation : move;
 
             // dfmt off
             Desc d = {
@@ -152,11 +155,15 @@ class GraphicsPipeline : GPUPipeline
 
     void bind(ref StateGroup sg) 
     {
+        if (!prog) compile();
+        debugMessage("sg = %s", sg);
+        debugMessage("desc = %s", desc);
+        debugMessage("prog = %s, vao = %s", prog.object, vao.object);
         sg.program = prog.object;
         sg.rasterizerState = desc.rasterizerState;
         sg.depthStencilState = desc.depthStencilState;
         sg.barrierBits = desc.barrierBits;
-        sg.blendStates = desc.blendState;
+        sg.blendStates = desc.blendState.dup;
         sg.vertexArray = vao.object;
     }
 

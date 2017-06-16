@@ -1,6 +1,7 @@
 module gfx.state_group;
 import opengl;
 import gfx.buffer;
+import core.dbg;
 
 //////////////////////////////////////////////////
 enum StateGroupMask
@@ -106,27 +107,28 @@ struct StateGroup
     StateGroupMask mask;
     DepthStencilState depthStencilState;
     RasterizerState rasterizerState;
-    BlendState[8] blendStates;
+    BlendState[] blendStates;
     ScissorRect[8] scissorRects;
     Viewport[8] viewports;
     GLuint vertexArray;
     GLuint program;
     Uniforms uniforms;
     GLbitfield barrierBits;
-};
+}
 
 void bindStateGroup(ref const(StateGroup) sg)
 {
+    debugMessage("bindStateGroup %s", sg);
     // Viewports
     if (sg.mask & StateGroupMask.Viewports)
     {
-        glViewportArrayv(0, 8, cast(const float*) sg.viewports.ptr);
+        glViewportArrayv(0, cast(int)sg.viewports.length, cast(const float*) sg.viewports.ptr);
     }
 
     // Scissor rect
     if (sg.mask & StateGroupMask.ScissorRect)
     {
-        glScissorArrayv(0, 8, cast(const int*) sg.scissorRects.ptr);
+        glScissorArrayv(0, cast(int)sg.scissorRects.length, cast(const int*) sg.scissorRects.ptr);
     }
 
     // Blend states
@@ -137,7 +139,7 @@ void bindStateGroup(ref const(StateGroup) sg)
         else
         {
             glEnable(GL_BLEND); // XXX is this necessary
-            for (int i = 0; i < 8; ++i)
+            for (int i = 0; i < sg.blendStates.length; ++i)
             {
                 if (sg.blendStates[i].enabled)
                 {
