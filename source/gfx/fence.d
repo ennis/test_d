@@ -5,6 +5,11 @@ import gfm.core.queue;
 
 class Fence
 {
+    this()
+    {
+        syncPoints = new Queue!SyncPoint(100);
+    }
+
     enum WaitTimeout = 2000000000; // in nanoseconds
 
     void signal(ulong value)

@@ -5,6 +5,7 @@ import core.idtable : ID;
 import core.unique;
 import core.types;
 import core.aabb;
+import core.dbg;
 import engine.mesh : Mesh3D;
 import engine.scene;
 import std.container.array;
@@ -56,7 +57,7 @@ struct SceneObject
         
         foreach (c; children)
         {
-            bool childHasBounds = c.calculateWorldBounds();
+            immutable childHasBounds = c.calculateWorldBounds();
             if (childHasBounds)
             {
                 if (!hasWorldBounds)
@@ -71,6 +72,7 @@ struct SceneObject
             }
         }
 
+        debugMessage("obj=%s, world bounds = %s, children=%s", name, worldBounds, children.length);
         return hasWorldBounds;
     }
 

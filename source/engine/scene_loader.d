@@ -69,6 +69,7 @@ class AssimpSceneImporter
                 indices[i * 3 + 2] = aimesh.mFaces[i].mIndices[2];
             }
             aabb = getMeshAABB(vertices);
+            debugMessage("AABB=%s", aabb);
             cachedMesh = addCachedResource(cache_, meshName, Mesh3D(vertices, indices));
         }
         return cachedMesh;
@@ -110,6 +111,7 @@ class AssimpSceneImporter
                 subObj.eid = sub;
                 subObj.parent = thisNode;
                 subObj.mesh = importMesh(scene, meshid, subObj.meshBounds);
+                thisNode.children.insertBack(subObj);
             }
         }
         foreach (child; node.mChildren[0..node.mNumChildren]) {

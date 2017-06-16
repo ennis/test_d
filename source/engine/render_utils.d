@@ -24,11 +24,11 @@ private class State
     }
 
     void reloadShaders(Cache cache) {
-        drawSpriteShader = new GraphicsPipeline(cache, "resources/shaders/default.lua$drawSprite");
-        drawMeshShader = new GraphicsPipeline(cache, "resources/shaders/default.lua$drawMeshDefault");
-        drawWireMeshShader = new GraphicsPipeline(cache, "resources/shaders/default.lua$drawWireMesh");
-        drawWireMeshNoDepthShader = new GraphicsPipeline(cache, "resources/shaders/default.lua$drawWireMeshNoDepth");
-        drawWireMesh2DColorShader = new GraphicsPipeline(cache, "resources/shaders/default.lua$drawWireMesh2DColor");
+        drawSpriteShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawSprite");
+        drawMeshShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawMeshDefault");
+        drawWireMeshShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawWireMesh");
+        drawWireMeshNoDepthShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawWireMeshNoDepth");
+        drawWireMesh2DColorShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawWireMesh2DColor");
     }
 
     Sampler samplerNearest;

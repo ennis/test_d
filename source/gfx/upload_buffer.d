@@ -14,6 +14,7 @@ public:
   {
     buffer = new Buffer(Buffer.Usage.Upload, size);
     mapped_region = buffer.map(0,size);
+    fencedRegions = new Queue!FencedRegion(100);
   }
 
   bool upload(const void* data, ulong size, ulong alignment,

@@ -9,38 +9,50 @@ import engine.imgui;
 import gfm.math.funcs;
 import std.math;
 
+
+
+immutable CamFront = vec3(0.0f, 0.0f, 1.0f);
+immutable CamRight = vec3(1.0f, 0.0f, 0.0f);
+immutable CamUp = vec3(0.0f, 1.0f, 0.0f);
+
+auto length2(T)(T a)
+{
+  return dot(a,a);
+}
+
 // Shamelessly copied from GLM <glm/gtx/quaternion.inl>
 quat rotation(ref const(vec3) orig, ref const(vec3) dest)
-	{
+{
+    alias T = float;
 		T cosTheta = dot(orig, dest);
-		tvec3<T, P> rotationAxis;
+		tvec3!(T) rotationAxis;
 
-		if(cosTheta >= static_cast<T>(1) - epsilon<T>())
+		if(cosTheta >= cast(T)1 - T.epsilon)
 			return quat();
 
-		if(cosTheta < static_cast<T>(-1) + epsilon<T>())
+		if(cosTheta < cast(T) -1 + T.epsilon)
 		{
 			// special case when vectors in opposite directions :
 			// there is no "ideal" rotation axis
 			// So guess one; any will do as long as it's perpendicular to start
 			// This implementation favors a rotation around the Up axis (Y),
 			// since it's often what you want to do.
-			rotationAxis = cross(tvec3<T, P>(0, 0, 1), orig);
-			if(length2(rotationAxis) < epsilon<T>()) // bad luck, they were parallel, try again!
-				rotationAxis = cross(tvec3<T, P>(1, 0, 0), orig);
+			rotationAxis = cross(tvec3!(T)(0, 0, 1), orig);
+			if(length2(rotationAxis) < T.epsilon) // bad luck, they were parallel, try again!
+				rotationAxis = cross(tvec3!(T)(1, 0, 0), orig);
 
-			rotationAxis = normalize(rotationAxis);
-			return angleAxis(pi<T>(), rotationAxis);
+			rotationAxis = rotationAxis.normalized;
+			return quat.fromAxis(rotationAxis, cast(T)PI);
 		}
 
 		// Implementation from Stan Melax's Game Programming Gems 1 article
 		rotationAxis = cross(orig, dest);
 
-		T s = sqrt((T(1) + cosTheta) * static_cast<T>(2));
-		T invs = static_cast<T>(1) / s;
+		T s = sqrt((cast(T)1 + cosTheta) * cast(T)2);
+		T invs = cast(T)1 / s;
 
-		return tquat<T, P>(
-			s * static_cast<T>(0.5f), 
+		return quat(
+			s * cast(T)0.5, 
 			rotationAxis.x * invs,
 			rotationAxis.y * invs,
 			rotationAxis.z * invs);
@@ -63,7 +75,7 @@ public:
   void pan(float dx, float dy, float dz) 
   {
 	// dx, dy to camera space
-	float panFactor = radius_;
+	  float panFactor = radius_;
     const vec3 look = toCartesian().normalized();
     const vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
     const vec3 right = cross(look, worldUp);
@@ -93,7 +105,7 @@ public:
     cam.projMatrix = mat4.scaling(vec3(zoomLevel_, zoomLevel_, 1.0f)) *
                   mat4.perspective(radians(fov_), aspectRatio_, nearPlane_,
                                    farPlane_);
-    cam.wEye = vec3(cam.invViewMatrix * vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    cam.wEye = (cam.invViewMatrix * vec4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
     return cam;
   }
 
@@ -111,6 +123,7 @@ public:
 
   void centerOnObject(ref const(AABB) objectBounds) 
   {
+    debugMessage("centerOnObject %s", objectBounds);
     import std.algorithm.comparison : max;
     auto size = max(objectBounds.width, objectBounds.height, objectBounds.depth);
     auto cx = (objectBounds.xmax + objectBounds.xmin) / 2.0f;
@@ -157,14 +170,14 @@ public:
     if (OP_squared <= 1)
       P.z = sqrt(1 - OP_squared);
     else
-      P = normalize(P);
+      P = P.normalized();
     return P;
   }
 
   enum CameraMode { Idle, Panning, Rotating }
 
   bool onCameraGUI(int mouseX, int mouseY, int screenW, int screenH,
-                           inout Camera inOutCam) 
+                           ref Camera inOutCam) 
  {
     bool handled = false;
     // CTRL and SHIFT
@@ -172,6 +185,8 @@ public:
                      igIsKeyDown(KEY_RIGHT_CONTROL);
     bool shift_down = igIsKeyDown(KEY_LEFT_SHIFT) ||
                       igIsKeyDown(KEY_RIGHT_SHIFT);*/
+    bool ctrl_down = false;
+    bool shift_down = false;
 
     setAspectRatio(cast(float)screenW / cast(float)screenH);
 
@@ -256,7 +271,8 @@ public:
 
   void focusOnObject(ref SceneObject sceneObject) 
   {
-    centerOnObject(sceneObject.getApproximateWorldBounds());
+    debugMessage("focusOnObject: %s", sceneObject);
+    centerOnObject(sceneObject.worldBounds);
   }
 
 private:

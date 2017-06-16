@@ -4,8 +4,10 @@ import glfw3;
 import opengl;
 import core.imageformat;
 import core.dbg;
+import core.types;
 import gfx.texture;
 import gfx.context;
+import gfx.framebuffer;
 import gfx.state_group;
 import glad.gl.loader;
 import std.exception;
@@ -15,6 +17,7 @@ import core.idtable;
 import engine.scene_loader;
 import engine.scene;
 import engine.scene_object;
+import engine.camera_control;
 import core.cache;
 
 import imgui_glfw;
@@ -114,13 +117,30 @@ public:
 		sceneObjects = new SceneObjectComponents;
 		cache = getDefaultCache();
 		rootObject = importScene(path, entities, sceneObjects, null, cache);
+		camCtl = new CameraController();
+		mat4 rootTransform = mat4.identity;
+		rootObject.calculateWorldTransform(rootTransform);
+		rootObject.calculateWorldBounds();
 	}
 
-	void render() 
+	void render(Framebuffer target) 
 	{
+		if (!rootObject) 
+		{
+			return;
+		}
+
+		import engine.render_utils : drawMesh;
+		camCtl.setAspectRatio(cast(float)target.width / cast(float)target.height);
+		camCtl.focusOnObject(*rootObject);
+		auto cam = camCtl.getCamera();
+		foreach(ref s; sceneObjects.components) {
+			drawMesh(target, cam, *s.mesh, s.worldTransform, vec4(0.0f,1.0f,0.0f,1.0f));
+		}
 	}
 
 private:
+	CameraController camCtl;
 	IDTable entities;
 	Cache cache;
 	SceneObjectComponents sceneObjects;
@@ -169,12 +189,14 @@ void main()
 
 	DerelictImgui.load();
 	igImplGlfwGL3_Init(w, true);
-	int screenW;
-	int screenH;
-	glfwGetFramebufferSize(w, &screenW, &screenH);
 
 	while (!glfwWindowShouldClose(w))
 	{
+		int screenW;
+		int screenH;
+		glfwGetFramebufferSize(w, &screenW, &screenH);
+		auto fbo = new Framebuffer(screenW, screenH);
+
 		glfwPollEvents();
 		auto tcur = glfwGetTime();
 		auto tdiff = tcur - t;
@@ -209,6 +231,9 @@ void main()
 
 		//glViewport(0, 0, screenW, screenH);
 		igRender();
+
+		mainScene.render(fbo);
+
 		glfwSwapBuffers(w);
 	}
 

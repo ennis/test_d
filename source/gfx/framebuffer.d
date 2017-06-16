@@ -49,6 +49,12 @@ class Framebuffer : GLObject
     this()
     {}
 
+    this(int width, int height) 
+    {
+        width_ = width;
+        height_ = height;
+    }
+
     void checkDimensions(int w, int h) {
         if (((width_ != 0) && (width_ != w)) || ((height_ != 0) && (height_ != h)))
         {

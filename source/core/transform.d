@@ -1,26 +1,25 @@
 module core.transform;
 
 import core.types;
+import gfm.math.funcs;
 
 struct Transform
 {
   vec3 scaling = vec3(1.0f, 1.0f, 1.0f);
   vec3 position = vec3(0.0f, 0.0f, 0.0f);
-  quat rotation;
+  quat rotation = quat.identity;
 
   //  
   mat4 getMatrix() const
   {
-    //mat4 m = mat4.identity();
-    //m.scale(scaling);
-    //m.rotate()
-    //return glm::scale(glm::translate(glm::mat4{1.0f}, position) * glm::toMat4(rotation), scaling);
-    return mat4.init; // TODO
+    return mat4.translation(position) * cast(mat4)rotation * mat4.scaling(scaling);
   }
 
   @property mat4 matrix() const {
     return getMatrix();
   }
+
+  // TODO assign matrix property
 
   // 
   mat3 getNormalMatrix() const
