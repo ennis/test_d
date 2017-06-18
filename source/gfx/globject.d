@@ -10,7 +10,7 @@ abstract class GLObject
 
     @property auto object() const { return obj; }
 
-    abstract void release();
+    abstract void release() @nogc;
 
     protected GLuint obj;
 }

@@ -45,13 +45,16 @@ class Shader : GLObject
     return log.idup;
   }
 
-  override void release() {
-    if (obj)
+  override void release() @nogc {
+    if (obj) {
       glDeleteShader(obj);
+      obj = 0;
+    }
   }
 
   private void compile(GLenum stage, string source)
   {
+    //debugMessage("compile\n%s", source);
     obj = glCreateShader(stage);
     const(char*)[1] shaderSources = [source.ptr];
     glShaderSource(obj, 1, shaderSources.ptr, null);
@@ -61,6 +64,8 @@ class Shader : GLObject
 
 class Program : GLObject
 {
+  private bool valid_ = false;
+
   this()
   {
   }
@@ -74,9 +79,12 @@ class Program : GLObject
     string tessEvalShader;
   }
 
-  override void release() {
+  override void release() @nogc {
     if (obj)
+    {
       glDeleteProgram(obj);
+      obj = 0;
+    }
   }
 
   void attach(Shader s)
@@ -108,13 +116,20 @@ class Program : GLObject
 
   void link() { glLinkProgram(obj); }
 
+  @property bool valid() const 
+  {
+    return valid_;
+  }
+
   static Program create(Desc sources)
   {
     auto checkedCompile = (string src, GLenum stage) {
       auto s = new Shader(stage, src);
-      //dumpCompileLog(s, stage, std::cerr);
+      dumpCompileLog(s, stage);
       return s;
     };
+
+    debugMessage("sources=%s",sources);
 
     Shader vs, fs, gs, tcs, tes;
     Program prog = new Program();
@@ -139,18 +154,19 @@ class Program : GLObject
     }
 
     prog.link();
-    //dumpLinkLog(prog, std::cerr);
+    prog.valid_ = prog.getLinkStatus();
+    dumpLinkLog(prog);
     return prog;
   }
 
   static Program createCompute(string computeShader)
   {
     auto s = new Shader(GL_COMPUTE_SHADER, computeShader);
-    //dumpCompileLog(s, GL_COMPUTE_SHADER, std::cerr);
+    //dumpCompileLog(s, GL_COMPUTE_SHADER);
     auto p = new Program();
     p.attach(s);
     p.link();
-    //dumpLinkLog(p, std::cerr);
+    //dumpLinkLog(this, std::cerr);
     return p;
   }
 }
@@ -162,15 +178,15 @@ void dumpCompileLog(Shader sh, GLenum stage, string fileHint = "<unknown>")
   if (!status)
   {
     errorMessage("===============================================================");
-    errorMessage("Shader compilation error (file: {}, stage: {})", fileHint,
-        stage.stringof);
-    errorMessage("Compilation log follows:\n\n{}\n\n", log);
+    errorMessage("Shader compilation error (file: %s, stage: %s)", fileHint,
+        stage);
+    errorMessage("Compilation log follows:\n%s\n", log);
   }
   else if (log.length)
   {
-    warningMessage("Shader compilation messages (file: {}, stage: {})",
-        fileHint, stage.stringof);
-    warningMessage("{}", log);
+    warningMessage("Shader compilation messages (file: %s, stage: %s)",
+        fileHint, stage);
+    warningMessage("%s", log);
   }
 }
 
@@ -182,11 +198,11 @@ void dumpLinkLog(Program prog, string fileHint = "<unknown>")
   {
     errorMessage("===============================================================");
     errorMessage("Program link error");
-    errorMessage("Link log follows:\n\n{}\n\n", log);
+    errorMessage("Link log follows:\n%s\n", log);
   }
   else if (log.length)
   {
     warningMessage("Program link messages:");
-    warningMessage("{}", log);
+    warningMessage("%s", log);
   }
 }

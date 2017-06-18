@@ -118,7 +118,7 @@ struct StateGroup
 
 void bindStateGroup(ref const(StateGroup) sg)
 {
-    debugMessage("bindStateGroup %s", sg);
+    //debugMessage("bindStateGroup %s", sg);
     // Viewports
     if (sg.mask & StateGroupMask.Viewports)
     {

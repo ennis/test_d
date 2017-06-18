@@ -3,7 +3,7 @@
 
   If you need real statistics, consider using the $(WEB github.com/dsimcha/dstats,Dstats) library.
  */
-module gfm.math.funcs;
+module math.funcs;
 
 import std.math,
        std.traits,

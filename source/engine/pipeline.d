@@ -133,6 +133,20 @@ class GraphicsPipeline : GPUPipeline
         import engine.shader_preprocessor : ShaderSources,
             preprocessMultiShaderSources;
 
+        if (!shouldRecompile) {
+            return;
+        }
+
+        if (vao) 
+        {
+            vao.release();
+        }
+
+        if (prog) 
+        {        
+            prog.release();
+        }
+
         ShaderSources ss;
         ss.vertexShader.source = desc.vertexShader;
         ss.fragmentShader.source = desc.fragmentShader;
@@ -148,23 +162,31 @@ class GraphicsPipeline : GPUPipeline
         // create the program
         prog = Program.create(Program.Desc(ss.vertexShader.source, ss.fragmentShader.source,
                 ss.geometryShader.source, ss.tessControlShader.source, ss.tessEvalShader.source));
+        if (!prog.getLinkStatus()) {
+            errorMessage("Failed to compile program: %s(%s)", origPath, origSubpath);
+        }
         // create the VAO
         vao = new VertexArray(desc.layout);
+        debugMessage("desc.layout=%s",desc.layout);
         // all done!
+        shouldRecompile = false;
     }
 
     void bind(ref StateGroup sg) 
     {
-        if (!prog) compile();
-        debugMessage("sg = %s", sg);
-        debugMessage("desc = %s", desc);
-        debugMessage("prog = %s, vao = %s", prog.object, vao.object);
-        sg.program = prog.object;
-        sg.rasterizerState = desc.rasterizerState;
-        sg.depthStencilState = desc.depthStencilState;
-        sg.barrierBits = desc.barrierBits;
-        sg.blendStates = desc.blendState.dup;
-        sg.vertexArray = vao.object;
+        compile();
+        //debugMessage("sg = %s", sg);
+        //debugMessage("desc = %s", desc);
+        //debugMessage("prog = %s, vao = %s", prog.object, vao.object);
+        if (prog && prog.valid)
+        {
+            sg.program = prog.object;
+            sg.rasterizerState = desc.rasterizerState;
+            sg.depthStencilState = desc.depthStencilState;
+            sg.barrierBits = desc.barrierBits;
+            sg.blendStates = desc.blendState.dup;
+            sg.vertexArray = vao.object;
+        }
     }
 
     string origPath;
@@ -175,6 +197,7 @@ class GraphicsPipeline : GPUPipeline
     Program prog;
     // Not shared
     VertexArray vao;
+    bool shouldRecompile = true;
 }
 
 unittest

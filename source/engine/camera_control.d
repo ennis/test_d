@@ -6,7 +6,7 @@ import core.aabb;
 import core.dbg;
 import engine.scene_object;
 import engine.imgui;
-import gfm.math.funcs;
+import math.funcs;
 import std.math;
 
 
@@ -98,7 +98,7 @@ public:
   }
 
   //
-  Camera getCamera() const {
+  Camera getCamera() const  {
     Camera cam;
     cam.viewMatrix = getLookAt();
     cam.invViewMatrix = cam.viewMatrix.inverse;
@@ -110,11 +110,13 @@ public:
   }
 
   mat4 getLookAt() const {
+    debugMessage("toCartesian=%s", toCartesian());
+    debugMessage("arcballRotation=%s, tmpArcballRotation=%s", arcballRotation, tmpArcballRotation);
     return mat4.lookAt(target_ + toCartesian(), target_, CamUp) *
            cast(mat4)(arcballRotation * tmpArcballRotation);
   }
 
-  vec3 toCartesian() const {
+  vec3 toCartesian() const pure nothrow @nogc {
     float x = radius_ * sin(phi_) * sin(theta_);
     float y = radius_ * cos(phi_);
     float z = radius_ * sin(phi_) * cos(theta_);
@@ -135,7 +137,7 @@ public:
     lookDistance(camDist);
     setNearFarPlanes(0.1f * camDist, 10.0f * camDist);
     setFieldOfView(fov);
-	arcballRotation = quat.init;
+  	arcballRotation = quat.identity;
     debugMessage("near %s far %s", 0.5f * camDist, 2.0f * camDist);
   }
 

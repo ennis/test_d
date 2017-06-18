@@ -99,6 +99,7 @@ class AssimpSceneImporter
         thisNode.localTransform.scaling.x = scaling.x;
         thisNode.localTransform.scaling.y = scaling.y;
         thisNode.localTransform.scaling.z = scaling.z;
+        debugMessage("scaling=%s, position=%s, rotation=%s", scaling, position, rotation);
         if (node.mNumMeshes == 1) {
             thisNode.mesh = importMesh(scene, node.mMeshes[0], thisNode.meshBounds);
         }

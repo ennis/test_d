@@ -1,5 +1,4 @@
 
-#pragma stages(vertex,fragment)
 
 #ifdef _VERTEX_ 
 layout(std140, binding = 0) uniform CameraParameters {

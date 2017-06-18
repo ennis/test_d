@@ -1,5 +1,8 @@
 #version 450
+#include "Utils.glsli"
 #include "MeshShader.glsli"
+
+#pragma stages(vertex,fragment)
 
 #ifdef _VERTEX_
 void main() {

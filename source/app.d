@@ -130,14 +130,15 @@ public:
 			return;
 		}
 
-		import engine.render_utils : drawMesh;
+		import engine.render_utils : drawWireMesh;
 		camCtl.setAspectRatio(cast(float)target.width / cast(float)target.height);
 		camCtl.focusOnObject(*rootObject);
 		auto cam = camCtl.getCamera();
-		debugMessage("cam=%s", cam);
+		//debugMessage("cam=%s", cam);
 		foreach(ref s; sceneObjects.components) {
 			debugMessage("rendering object %s", s);
-			drawMesh(target, cam, *s.mesh, s.worldTransform, vec4(0.0f,1.0f,0.0f,1.0f));
+			if (s.mesh)
+				drawWireMesh(target, cam, *s.mesh, s.worldTransform, vec4(0.0f,1.0f,0.0f,1.0f));
 		}
 	}
 
@@ -208,9 +209,9 @@ void main()
 		}
 
 		glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		igImplGlfwGL3_NewFrame();
+		/*igImplGlfwGL3_NewFrame();
 
 		ImGuiIO* io = igGetIO();
 
@@ -232,10 +233,11 @@ void main()
 		}
 
 		//glViewport(0, 0, screenW, screenH);
-		igRender();
+		igRender();*/
 
 		mainScene.render(fbo);
 
+		ctx.endFrame();
 		glfwSwapBuffers(w);
 	}
 

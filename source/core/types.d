@@ -1,7 +1,7 @@
 module core.types;
-public import gfm.math.matrix;
-public import gfm.math.vector;
-public import gfm.math.quaternion;
+public import math.matrix;
+public import math.vector;
+public import math.quaternion;
 
 alias ivec2 = vec2i;
 alias ivec3 = vec3i;

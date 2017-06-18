@@ -25,7 +25,10 @@ class Buffer : GLObject
     override void release() 
     {
         if (obj)
+        {
             glDeleteBuffers(1, &obj);
+            obj = 0;
+        }
     }
 
     this(Usage usage_, size_t size_, const(void)* initialData = null)

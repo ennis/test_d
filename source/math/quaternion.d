@@ -1,11 +1,11 @@
-module gfm.math.quaternion;
+module math.quaternion;
 
 import std.math,
        std.string;
 
-import gfm.math.vector,
-       gfm.math.matrix,
-       funcs = gfm.math.funcs;
+import math.vector,
+       math.matrix,
+       funcs = math.funcs;
 
 /// Quaternion implementation.
 /// Holds a rotation + angle in a proper but wild space.
@@ -15,11 +15,11 @@ struct Quaternion(T)
     {
         union
         {
-            Vector!(T, 4u) v;
             struct
             {
                 T x, y, z, w;
             }
+            Vector!(T,4) v;
         }
 
         /// Construct a Quaternion from a value.

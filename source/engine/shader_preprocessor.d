@@ -45,6 +45,13 @@ void preprocessMultiShaderSources(ref ShaderSources inOutShaderSources,
                   ShaderStage.TessControl);
   preprocessStage(inOutShaderSources.tessEvalShader, ShaderStage.TessEval);
   preprocessStage(inOutShaderSources.computeShader, ShaderStage.Compute);
+
+  debugMessage("VERTEX:\n%s",inOutShaderSources.vertexShader.source);
+  debugMessage("GEOM:\n%s",inOutShaderSources.geometryShader.source);
+  debugMessage("FRAG:\n%s",inOutShaderSources.fragmentShader.source);
+  debugMessage("TESS_CTL:\n%s",inOutShaderSources.tessControlShader.source);
+  debugMessage("TESS_EVAL:\n%s",inOutShaderSources.tessEvalShader.source);
+  debugMessage("COMPUTE:\n%s",inOutShaderSources.computeShader.source);
 }
 
 
@@ -65,7 +72,7 @@ string preprocessShaderSource(string source, string path,
                  sourceMap);
   debugMessage("PP: Enabled stages: %s", enabledShaderStages);
   // This source does not define a shader of the specified type
-  if (!enabledShaderStages & stage) 
+  if (!(enabledShaderStages & stage)) 
   {
     return "";
   }
@@ -130,7 +137,7 @@ auto directivesRegexp = regex(
     [`^\s*#include\s+"(.*)"\s*?$`, 
     `^\s*#version\s+([0-9]*)\s*?$`, 
     `^\s*#pragma\s+(.*)\s*?$`, 
-    `^(.*)$`], "m");
+    `^(.*)$`], "gm");
 
 auto shaderStagePragmaRegexp = ctRegex!(`^stages\s*\(\s*(\w+)(?:\s*,\s*(\w+))*\s*\)\s*?$`);
 
@@ -144,15 +151,17 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
 
     int thisFileIndex = cast(int) sourceMap.length;
     sourceMap ~= SourceMapEntry(thisFileIndex, thisFile.path);
-    debugMessage("preprocessGLSL %s", thisFile.path);
+    //debugMessage("preprocessGLSL %s", thisFile.path);
     auto dir = dirName(thisFile.path);
 
     int curLine = 1;
     bool shouldOutputLineDirective = false;
 
+	debugMessage("source");
+
     foreach (m; matchAll(source, directivesRegexp))
     {
-        debugMessage("which pattern=%s", m.whichPattern);
+        //debugMessage("which pattern=%s", m.whichPattern);
         final switch (m.whichPattern())
         {
         case 1: // matched include directive
@@ -201,7 +210,7 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
             }
         case 3: // pragma directive
         {
-            debugMessage("matched pragma directive %s", m[1]);
+            //debugMessage("matched pragma directive %s", m[1]);
                 auto pragmaStagesMatches = matchAll(m[1], shaderStagePragmaRegexp);
                 if (!pragmaStagesMatches.empty())
                 {
@@ -243,7 +252,9 @@ void preprocessGLSL(ref string ppout, string source, ref int lastSeenVersion,
                 ppout ~= "#line " ~ to!string(curLine) ~ " " ~ to!string(thisFileIndex) ~ '\n';
                 shouldOutputLineDirective = false;
             }
-            ppout ~= m[1];
+			auto ll = m[1];
+			//debugMessage("%s", ll);
+            ppout ~= ll ~ '\n';
             curLine++;
             break;
         }

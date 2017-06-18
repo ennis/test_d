@@ -1,4 +1,4 @@
-module gfm.math.vector;
+module math.vector;
 
 import std.traits,
        std.math,
@@ -7,7 +7,7 @@ import std.traits,
        std.array,
        std.string;
 
-import gfm.math.funcs;
+import math.funcs;
 
 /**
  * Generic 1D small vector.

@@ -7,6 +7,7 @@ import gfx.texture;
 import gfx.context;
 import core.dbg;
 import opengl;
+import gfx.frame;
 
 struct DrawArrays {
     GLenum primitiveType;
@@ -40,15 +41,15 @@ void draw(DrawCommand, Pipeline, Args...)(Framebuffer fbo, DrawCommand cmd, Pipe
 {
     StateGroup sg;
     // 1. bind program & draw states (~= pipeline state)
-    debugMessage("bind %s", pipeline);
+    //debugMessage("bind %s", pipeline);
     pipeline.bind(sg);
     // 1.1. bind framebuffer
-    debugMessage("bind %s", fbo);
+    //debugMessage("bind %s", fbo);
     RenderTarget(fbo).bind(sg);
     // 2. bind dynamic args
     sg.mask = StateGroupMask.All;
     foreach (ref a; args) {
-        debugMessage("bind %s", a);
+        //debugMessage("bind %s", a);
         a.bind(sg);
     }
     // 3. call render command
@@ -96,7 +97,7 @@ void drawQuad(Shader, Args...)(Framebuffer fbo, Shader shader, Args args) {
       {1.0f, -1.0f, 0.0f, 0.0f},  {1.0f, 1.0f, 0.0f, 0.0f}];
 
   // upload vertex data each frame (who cares)
-  auto vbuf = uploadFrameArray(quad);
+  auto vbuf = uploadFrameData(quad);
 
   draw(fbo, DrawArrays(GL_TRIANGLES, 0, 6), shader,
        VertexBuffer(0, vbuf, Vertex2D.sizeof),

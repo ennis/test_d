@@ -19,7 +19,6 @@ auto uploadFrameData(T)(ref T data, size_t alignment = -1)
         static assert(is(U == struct));
         ptr = data.ptr;
         len = data.length * U.sizeof;
-
     }
     else {
         // Uploading a reference type makes no sense

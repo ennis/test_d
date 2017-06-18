@@ -72,7 +72,7 @@ struct SceneObject
             }
         }
 
-        debugMessage("obj=%s, world bounds = %s, children=%s", name, worldBounds, children.length);
+        debugMessage("obj=%s, world transform=%s; world bounds=%s, children=%s", name, worldTransform, worldBounds, children.length);
         return hasWorldBounds;
     }
 
@@ -81,6 +81,7 @@ struct SceneObject
         mat4 current = parentTransform;
         current *= localTransform.getMatrix();
         worldTransform = current;
+        debugMessage("localTransform=%s, world transform=%s", localTransform, worldTransform);
         foreach (c; children) {
             c.calculateWorldTransform(current);
         }

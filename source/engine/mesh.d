@@ -20,6 +20,11 @@ struct Mesh(T) if (isVertexType!(T))
     {
         VertexBuffer(0, vertexBuffer.asSlice(), T.sizeof).bind(sg);
         IndexBuffer(indexBuffer.asSlice(), GL_UNSIGNED_INT).bind(sg);
+        bindStateGroup(sg);
+        auto indexStride = 4;
+        glDrawElementsBaseVertex(GL_TRIANGLES, cast(int)indexCount, GL_UNSIGNED_INT,
+                             cast(const(void)*) (cast(size_t)0 * indexStride),
+                             0);
     }
 
     Buffer vertexBuffer;

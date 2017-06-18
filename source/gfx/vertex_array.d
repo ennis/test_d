@@ -2,6 +2,7 @@ module gfx.vertex_array;
 import gfx.globject;
 import gfx.context;
 import opengl;
+import core.dbg;
 
 struct VertexAttribute {
   int slot;
@@ -24,6 +25,7 @@ public:
 
   void initialize(const(VertexAttribute)[] attribs)
   {
+    debugMessage("attribs=%s",attribs);
     immutable MaxAttribs = 16; 
     assert(attribs.length < getGfxContext().implementationLimits.max_vertex_attributes);
     glCreateVertexArrays(1, &obj);

@@ -24,8 +24,8 @@ private class State
     }
 
     void reloadShaders(Cache cache) {
-        drawSpriteShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawSprite");
         drawMeshShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawMeshDefault");
+        drawSpriteShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawSprite");
         drawWireMeshShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawWireMesh");
         drawWireMeshNoDepthShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawWireMeshNoDepth");
         drawWireMesh2DColorShader = new GraphicsPipeline(cache, "data/shaders/default.lua$drawWireMesh2DColor");
@@ -64,10 +64,10 @@ private struct CameraUniforms
 {
     this(ref const(Camera) cam)
     {
-        viewMatrix = cam.viewMatrix;
-        projMatrix = cam.projMatrix;
-        viewProjMatrix = projMatrix * viewMatrix;
-        invProjMatrix = cam.projMatrix.inverse;
+        viewMatrix = cam.viewMatrix.transposed;
+        projMatrix = cam.projMatrix.transposed;
+        viewProjMatrix = (cam.projMatrix * cam.viewMatrix).transposed;
+        invProjMatrix = cam.projMatrix.inverse.transposed;
     }
 
     mat4 viewMatrix;
@@ -86,6 +86,22 @@ void drawMesh(Framebuffer target, ref const(Camera) cam, ref Mesh3D mesh,
        UniformBuffer(0, uploadFrameData(camUniforms)),
        UniformMat4("uModelMatrix", modelTransform),
        UniformVec4("uColor", color));
+
+	//drawQuad(target, state.drawSpriteShader, UniformVec4("uColor", color));
+}
+
+void drawWireMesh(Framebuffer target, ref const(Camera) cam, ref Mesh3D mesh,
+              mat4 modelTransform, vec4 color) 
+{
+  auto camUniforms = CameraUniforms(cam);
+  auto state = getState();
+
+  draw(target, mesh, state.drawWireMeshNoDepthShader,
+       UniformBuffer(0, uploadFrameData(camUniforms)),
+       UniformMat4("uModelMatrix", modelTransform),
+       UniformVec4("uColor", color));
+
+	//drawQuad(target, state.drawSpriteShader, UniformVec4("uColor", color));
 }
 
 void drawLines(Framebuffer target, ref const(Camera) cam,

@@ -1,7 +1,7 @@
 module core.transform;
 
 import core.types;
-import gfm.math.funcs;
+import math.funcs;
 
 struct Transform
 {

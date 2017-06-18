@@ -101,6 +101,8 @@ struct UniformBuffer
     void bind(ref StateGroup sg) const
     {
         sg.uniforms.uniformBuffers[slot] = slice.obj;
+        sg.uniforms.uniformBufferOffsets[slot] = slice.offset;
+        sg.uniforms.uniformBufferSizes[slot] = slice.size;
     }
 }
 
