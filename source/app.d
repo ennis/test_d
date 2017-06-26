@@ -136,7 +136,7 @@ public:
 		auto cam = camCtl.getCamera();
 		//debugMessage("cam=%s", cam);
 		foreach(ref s; sceneObjects.components) {
-			debugMessage("rendering object %s", s);
+			//debugMessage("rendering object %s", s);
 			if (s.mesh)
 				drawWireMesh(target, cam, *s.mesh, s.worldTransform, vec4(0.0f,1.0f,0.0f,1.0f));
 		}

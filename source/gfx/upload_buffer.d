@@ -28,7 +28,7 @@ public:
       return false;
     }
     // copy data
-    debugMessage("upload buffer: %s (%s bytes) -> %s", data, size, cast(char *)mapped_region + slice.offset);
+    //debugMessage("upload buffer: %s (%s bytes) -> %s", data, size, cast(char *)mapped_region + slice.offset);
     memcpy(cast(char *)mapped_region + slice.offset, data, size);
     return true;
   }
@@ -48,7 +48,7 @@ public:
 
   void reclaim(ulong date)
   {
-    debugMessage("reclaiming data before frame %s", date);
+    //debugMessage("reclaiming data before frame %s", date);
     while (fencedRegions.length &&
           fencedRegions.front.expirationDate <= date) {
       auto r = fencedRegions.front;

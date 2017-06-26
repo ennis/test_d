@@ -6,6 +6,7 @@ import core.interp;
 import gfx.texture;
 import gfx.buffer;
 
+import std.typecons;
 import std.variant;
 
 class FrameGraph 
@@ -18,57 +19,34 @@ class FrameGraph
         TransformFeedbackOutput,
     }
 
-    static class SharedResource 
-    {
-        private 
-        {
-            static struct Lifetime { 
-                int begin = -1; 
-                int end = -1; 
-            }
-            Lifetime lifetime;
-            string name_;
-            int lastRenameIndex = 0;    // last seen SSA index
-        }
-
-        @property string name() const { return name_; }
-
-        abstract SharedResource clone();
-    }
-
-    static class Texture : SharedResource {
-        gfx.texture.Texture.Desc texdesc;
-        gfx.texture.Texture texture;   // can be aliased
-        alias texdesc this;
-
-        override Texture clone() const { return null; }
-    }
-
-    static class Buffer : SharedResource {
-        size_t size;
-        gfx.buffer.Buffer.Usage bufferUsage;
-        gfx.buffer.Buffer buffer;   // can be aliased
-
-        override Buffer clone() const { return null; }
-    }
-
     // Renamed resource handle
     static struct Resource {
-        SharedResource sharedResource;      // pointer to the resource entry (Texture or buffer)
+        SharedResource actual;      // pointer to the actual resource entry (Texture or buffer)
         ResourceUsage usage;    // how is the resource used
         int renameIndex;        // SSA index
     }
 
-    class Pass
-    {
-        string name;
-        Resource[] reads;
-        Resource[] writes;
-        Resource[] creates;
-        // Private node data
-        Variant data;
-        // execution callback
-        void delegate(Pass) execCallback;
+    static struct TextureResource {
+        Resource thisResource;
+        alias thisResource this;
+        auto opCast(T)() if (Unqual!T == Resource) { return thisResource; }
+
+        @property auto metadata() const { return (cast(Texture)actual).texdesc; }
+    }
+
+    static struct BufferResource {
+        Resource thisResource;
+        alias thisResource this;
+        auto opCast(T)() if (Unqual!T == Resource) { return thisResource; }
+
+        @property auto metadata() const { 
+            struct Return {
+                size_t size;
+                gfx.buffer.Buffer.Usage bufferUsage;
+            }
+            auto buf = cast(Buffer)actual;
+            return Return(buf.size, buf.bufferUsage); 
+        }
     }
 
     struct PassBuilder 
@@ -76,30 +54,30 @@ class FrameGraph
         // add r as a read dependency, specify usage
         Resource read(Resource r, ResourceUsage usage)
         {
-            auto r = Resource(r.sharedResource, usage, r.renameIndex);
-            pass.reads ~= r;
-            return r;
+            auto r2 = Resource(r.actual, usage, r.renameIndex);
+            pass.reads ~= r2;
+            return r2;
         }
 
         Resource write(Resource r, ResourceUsage usage)
         {
-            auto w = Resource(r.sharedResource, usage, r.renameIndex+1);
+            auto w = Resource(r.actual, usage, r.renameIndex+1);
             pass.writes ~= w;
             return w;
         }
 
-        Resource createTexture(ref const(gfx.texture.Texture.Desc) desc, ResourceUsage usage)
+        TextureResource createTexture(ref const(gfx.texture.Texture.Desc) desc, ResourceUsage usage)
         {
             auto tex = fg.createTexture(desc);
-            auto c = Resource(tex, usage, 0);
+            auto c = TextureResource(Resource(tex, usage, 0));
             pass.creates ~= c;
             return c;
         }
 
-        void createBuffer(size_t size, gfx.buffer.Buffer.Usage bufferUsage, ResourceUsage usage) 
+        BufferResource createBuffer(size_t size, gfx.buffer.Buffer.Usage bufferUsage, ResourceUsage usage) 
         {
-            auto tex = fg.createBuffer(size, bufferUsage);
-            auto c = Resource(tex, usage, 0);
+            auto buf = fg.createBuffer(size, bufferUsage);
+            auto c = BufferResource(Resource(buf, usage, 0));
             pass.creates ~= c;
             return c;
         }
@@ -108,77 +86,59 @@ class FrameGraph
         Pass pass;
     }
 
-    // Create a transient texture
-    Texture createTexture(ref const(gfx.texture.Texture.Desc) desc) 
-    {
-        auto tex = new Texture();
-        tex.texdesc = desc;
-        resources ~= tex;
-        return null;
-    }
-
-    // Create a transient buffer
-    Buffer createBuffer(size_t size, gfx.buffer.Buffer.Usage bufferUsage)
-    {
-        auto buf = new Buffer();
-        buf.size = size;
-        buf.bufferUsage = bufferUsage;
-        resources ~= buf;
-        return null;
-    }
-
     void compile() 
     {
         bool hasWriteConflicts = false;
-        int[Resource] r_ren;    // read rename list (contains the rename index that
+        int[SharedResource] r_ren;    // read rename list (contains the rename index that
                         // should appear for the next read from a resource)
-        int[Resource] w_ren;    // write rename list (contains the rename index that
+        int[SharedResource] w_ren;    // write rename list (contains the rename index that
                         // should appear for the next write to a resource)
         
         // first pass: lifetime calculation and concurrent resource usage detection
         foreach (passIndex, pass; passes)
         {
             foreach (r; pass.reads) {
-                if (r_ren[r.resource] > r.renameIndex) {
+                if (r_ren[r.actual] > r.renameIndex) {
                     warningMessage(
                         "[FrameGraph] read/write conflict detected on resource %s.%s",
-                        r.resource.name, r.renameIndex);
+                        r.actual.name, r.renameIndex);
                     hasWriteConflicts = true;
                 }
                 else 
                 {
-                    w_ren[r.resource] = r.renameIndex + 1;
+                    w_ren[r.actual] = r.renameIndex + 1;
                 }
                 // update lifetime end
                 // resource is read during this pass, so the resource must outlive the pass
-                if (r.resource.lifetime.end < passIndex) {
-                    r.resource.lifetime.end = cast(int)passIndex;
+                if (r.actual.lifetime.end < passIndex) {
+                    r.actual.lifetime.end = cast(int)passIndex;
                 }
             }
 
             foreach (w; pass.writes) 
             {
-                if (w.resource.lifetime.begin == -1) {
-                    w.resource.lifetime.begin = cast(int)passIndex;
+                if (w.actual.lifetime.begin == -1) {
+                    w.actual.lifetime.begin = cast(int)passIndex;
                 }
 
                 // Note: p.writes should not contain the same resource twice with a
                 // different rename index
-                if (w_ren[w.resource] > w.renameIndex) {
+                if (w_ren[w.actual] > w.renameIndex) {
                     warningMessage(
                         "[FrameGraph] read/write conflict detected on resource %s.%s",
-                        w.resource.name, w.renameIndex);
+                        w.actual.name, w.renameIndex);
                     hasWriteConflicts = true;
                 } else {
                     // the next pass cannot use this rename for write operations
                     //AG_DEBUG("write rename index for {}: .{} -> .{}", w.handle,
                     //         w.renameIndex, w.renameIndex + 1);
-                    w_ren[w.resource] = w.renameIndex + 1;
-                    r_ren[w.resource] = w.renameIndex;
+                    w_ren[w.actual] = w.renameIndex + 1;
+                    r_ren[w.actual] = w.renameIndex;
                 }
             }
-
         }
+
+        // Second pass: 
     }
 
     Pass addPass(PrivateData, Setup, Execute)(string name, Setup setup, Execute execute)
@@ -199,10 +159,74 @@ class FrameGraph
 
     }
 
-    Resource[] resources;
-    gfx.buffer.Buffer[] buffers;
-    gfx.texture.Texture[] textures;
-    Pass[] passes;
+    private 
+    {
+        static class SharedResource 
+        {
+            static struct Lifetime { 
+                int begin = -1; 
+                int end = -1; 
+            }
+            Lifetime lifetime;
+            string name_;
+            int lastRenameIndex = 0;    // last seen SSA index
+            
+            @property string name() const { return name_; }
+
+            abstract SharedResource clone();
+        }
+
+        static class Texture : SharedResource {
+            gfx.texture.Texture.Desc texdesc;
+            gfx.texture.Texture texture;   // can be aliased
+
+            override Texture clone() const { return null; }
+        }
+
+        static class Buffer : SharedResource {
+            size_t size;
+            gfx.buffer.Buffer.Usage bufferUsage;
+            gfx.buffer.Buffer buffer;   // can be aliased
+
+            override Buffer clone() const { return null; }
+        }
+
+        class Pass
+        {
+            string name;
+            Resource[] reads;
+            Resource[] writes;
+            Resource[] creates;
+            // Private node data
+            Variant data;
+            // execution callback
+            void delegate(Pass) execCallback;
+        }
+
+        // Create a transient texture
+        Texture createTexture(ref const(gfx.texture.Texture.Desc) desc) 
+        {
+            auto tex = new Texture();
+            tex.texdesc = desc;
+            resources ~= tex;
+            return null;
+        }
+
+        // Create a transient buffer
+        Buffer createBuffer(size_t size, gfx.buffer.Buffer.Usage bufferUsage)
+        {
+            auto buf = new Buffer();
+            buf.size = size;
+            buf.bufferUsage = bufferUsage;
+            resources ~= buf;
+            return null;
+        }
+        
+        SharedResource[] resources;
+        gfx.buffer.Buffer[] buffers;
+        gfx.texture.Texture[] textures;
+        Pass[] passes;
+    }
 }
 
 // 1. Enter addPass!(T)
@@ -216,6 +240,13 @@ class FrameGraph
 // call fg.addPass(PassBuilder, <execution callback>, <private data>)
 // fg.addPass moves the private data into a variant object
 // private data should contain inputs and outputs
+
+// Bikeshedding: resource = actual resource + rename index
+// => edge, dependency, value (nondescript), resource (confusion), SSA Resource (unclear), ResourceHandle (too long), handle (nondescript)
+// => rename (unclear), variable (misleading)
+//
+// Descriptor => metadata
+// 
 
 
 struct Create
@@ -266,12 +297,31 @@ private
     }
 }
 
+private static template MembersWithUDAs(T, UDAs...) 
+{
+    string[] getMembersWithUDAs() 
+    {
+        import std.traits : hasUDA;
+        string[] result;
+        foreach (m; __traits(allMembers, T)) {
+            foreach (UDA; UDAs) {
+                if (hasUDA!(__traits(getMember, T, m), UDA)) {
+                    result ~= m;
+                }
+            }
+        }
+        return result;
+    }
+
+    enum MembersWithUDAs = getMembersWithUDAs(); 
+} 
+
+
 template PassOutputs(T)
 {
     struct PassOutputs
     {
-        import std.traits : getSymbolsByUDA;
-        static enum Outputs = cast(string[])[staticMap!(aliasStr, getSymbolsByUDA!(T, Create), getSymbolsByUDA!(T, Write))];
+        static enum Outputs = MembersWithUDAs!(T, Write, Create);
         static enum numOutputs = Outputs.length;
         mixin(genBody!("const(PassTypes!(typeof(T.${a})).ResourceType) ${a};")(Outputs));    
     }
@@ -279,19 +329,34 @@ template PassOutputs(T)
 
 template PassMetadata(T)
 {
-    class PassMetadata
+    struct PassMetadata
     {
         import std.traits : getSymbolsByUDA;
-
-        // Created transient resources
-        mixin(genBody!("PassTypes!(typeof(T.${a})).DescriptorType ${a};", getSymbolsByUDA!(T, Create))());
+        private static enum Created = MembersWithUDAs!(T, Create);
+        private static enum ReadWrite = MembersWithUDAs!(T, Read, Write);
 
         // Read and write inputs/outputs
-        mixin(genBody!("const(PassTypes!(typeof(T.${a})).DescriptorType) ${a};", getSymbolsByUDA!(T, Read), getSymbolsByUDA!(T, Write))());    
+        mixin(genBody!("const(PassTypes!(typeof(T.${a})).DescriptorType)* ${a};")(ReadWrite));  
+        // Created transient resources
+        mixin(genBody!("PassTypes!(typeof(T.${a})).DescriptorType ${a};")(Created));  
     }
-
 }
 
+template addPass(T) 
+{
+    PassOutputs!T addPass(Inputs...)(FrameGraph fg, Inputs inputs)
+    {
+        PassMetadata!(T) creationMetadata;
+
+        //fg.addPass()
+        // TODO init metadata with data in attributes
+        foreach (i; inputs) {
+            // cast input to expected Resource type (Texture or Buffer)
+            // Verify against metadata already present
+            // register Resource as input
+        }
+    }
+}
 
 // Handle type | PassResources
 // RTexture    | Texture
@@ -309,33 +374,33 @@ struct GeometryBuffers
     @Create Texture objectIDs;
     @Create Texture velocity;
 
-    bool setup(PassMetadata!(GeometryBuffers) meta, int w, int h) 
+    bool setup(PassMetadata!(GeometryBuffers) md, int w, int h) 
     {
         // XXX Input texture descriptors should be immutable
         // Check at runtime?
 
-        with (meta.depth) {
+        with (md.depth) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.D32_SFLOAT;
         }
 
-        with (meta.normals) {
+        with (md.normals) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.A2R10G10B10_SNORM_PACK32;
         }
 
-        with (meta.diffuse) {
+        with (md.diffuse) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.R8G8B8A8_SRGB;
         }
 
-        with (meta.velocity) {
+        with (md.velocity) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
