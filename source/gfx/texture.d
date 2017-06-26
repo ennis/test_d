@@ -142,11 +142,14 @@ class Texture : GLObject
         }
     }
 
-    @property auto width() const { return desc.width; }
-    @property auto height() const { return desc.height; }
-    @property auto depth() const { return desc.depth; }
-    @property auto format() const { return desc.fmt; }
-    @property auto dimensions() const { return desc.dims; }
+    // TODO replace this with immutable members
+    @property auto width() const pure nothrow { return desc.width; }
+    @property auto height() const pure nothrow { return desc.height; }
+    @property auto depth() const pure nothrow { return desc.depth; }
+    @property auto format() const pure nothrow { return desc.fmt; }
+    @property auto dimensions() const pure nothrow { return desc.dims; }
+    @property auto numMipLevels() const pure nothrow { return desc.mipMapCount; }
+    @property auto options() const pure nothrow { return desc.opts; }
 
     //====================================
     // Named constructors
@@ -180,7 +183,7 @@ class Texture : GLObject
         return new Texture(desc);
     }
 
-    private Desc desc;
+    Desc desc;
     private GLenum target = GL_TEXTURE_2D;
 }
 

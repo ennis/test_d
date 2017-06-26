@@ -32,6 +32,7 @@ class FrameGraph
         auto opCast(T)() if (Unqual!T == Resource) { return thisResource; }
 
         @property auto metadata() const { return (cast(Texture)actual).texdesc; }
+        @property auto resource() const { return (cast(Texture)actual).texture; }
     }
 
     static struct BufferResource {
@@ -47,6 +48,15 @@ class FrameGraph
             auto buf = cast(Buffer)actual;
             return Return(buf.size, buf.bufferUsage); 
         }
+        @property auto resource() const { return (cast(Buffer)actual).buffer; }
+    }
+
+    // Texture creation metadata
+    static struct TextureMetadata 
+    {
+        gfx.texture.Texture.Desc desc;
+        alias desc this;
+        float[4] clearColor;
     }
 
     struct PassBuilder 
@@ -138,7 +148,122 @@ class FrameGraph
             }
         }
 
-        // Second pass: 
+        // Second pass: resource allocation
+        ReuseCache reuseCache;
+
+        foreach (passIndex, p; passes) 
+        {
+            //AG_DEBUG("** PASS {}", p->name);
+            // create resources that should be created
+            foreach (create; p.creates) {
+                create.actual.allocate(reuseCache);
+            }
+
+            // release read-from resources that should be released on this pass
+            foreach (read; p.reads) {
+                auto actual = read.actual;
+                if (actual.lifetime.end <= passIndex) {
+                    if (auto texres = cast(Texture)actual) {
+                        // if it's a texture, add it into the reuse cache for recycling
+                        reuseCache.textureInUse[texres.texture] = false;
+                    }
+                }
+            }
+        }
+
+        // Print statistics about the allocated resources
+        debugMessage("====== TEXTURES: ======");
+        foreach (tex; reuseCache.allTextures) {
+            import std.conv : to;
+            import std.format : format;
+            string typeStr = to!string(tex.dimensions);
+            string formatStr = to!string(tex.format);
+            string dbg = typeStr ~ ",";
+
+            final switch (tex.dimensions) 
+            {
+            case ImageDimensions.Image1D: 
+                dbg ~= format("%s", tex.width);
+                break;
+            case ImageDimensions.Image1DArray:
+            case ImageDimensions.Image2D:
+            case ImageDimensions.Image2DArray:
+            case ImageDimensions.ImageCubeMap:
+                dbg ~= format("%sx%s", tex.width, tex.height);
+                break;
+            case ImageDimensions.Image3D:
+                dbg ~= format("%sx%sx%s", tex.width, tex.height, tex.depth);
+                break;
+            case ImageDimensions.Image3DArray:
+                dbg ~= format("<???>");
+                break;
+            }
+
+            dbg ~= format(",%s miplevels,", tex.numMipLevels);
+
+            if (tex.options & gfx.texture.Texture.Options.SparseStorage) {
+                dbg ~= "(Sparse)";
+            }
+            debugMessage("%s", dbg);
+        }
+
+        debugMessage("====== BUFFERS: ======");
+        foreach (buf; reuseCache.allBuffers) {
+            import std.conv : to;
+            debugMessage("%s bytes, usage %s", buf.size, buf.usage);
+        }
+
+       /* auto assignTexture = [&](ResourceDesc::Texture &texdesc) {
+            for (auto &&tex : textures) {
+            if (texturesInUse.count(tex.get()))
+                continue;
+            auto ptex = tex.get();
+            if (ptex->desc() == texdesc.desc) {
+                //AG_DEBUG("[REUSING TEXTURE @{} {}x{}x{} {}]", (const void *)ptex,
+                //         texdesc.desc.width, texdesc.desc.height, texdesc.desc.depth,
+                //         getImageFormatInfo(texdesc.desc.fmt).name);
+                texdesc.ptex = ptex;
+                texturesInUse.insert(ptex);
+                return;
+            }
+            }
+            auto tex = std::make_unique<Texture>(texdesc.desc);
+            auto ptex = tex.get();
+            textures.push_back(std::move(tex));
+            texturesInUse.insert(ptex);
+            //AG_DEBUG("[creating new texture @{} {}x{}x{} {}]", (const void *)ptex,
+            //         texdesc.desc.width, texdesc.desc.height, texdesc.desc.depth,
+            //         getImageFormatInfo(texdesc.desc.fmt).name);
+            texdesc.ptex = ptex;
+        };*/
+
+        /*auto assignBuffer = [&](ResourceDesc::Buffer &bufdesc) {
+            auto buf = std::make_unique<Buffer>(bufdesc.size, bufdesc.usage);
+            auto pbuf = buf.get();
+            buffers.push_back(std::move(buf));
+            //AG_DEBUG("[creating new buffer @{} of size {}]", (const void *)pbuf,
+            //         bufdesc.size);
+            bufdesc.buf = pbuf;
+        };*/
+
+       /* auto assignCompatibleResource = [&](ResourceDesc &rd) {
+            if (auto ptexdesc = get_if<ResourceDesc::Texture>(&rd.v)) {
+            assignTexture(*ptexdesc);
+            } else if (auto pbufdesc = get_if<ResourceDesc::Buffer>(&rd.v)) {
+            assignBuffer(*pbufdesc);
+            // always create another buffer, for now
+            }
+        };*/
+
+        /*auto releaseResource = [&](ResourceDesc &rd) {
+            if (auto ptexdesc = get_if<ResourceDesc::Texture>(&rd.v)) {
+            // AG_DEBUG("[RELEASE TEXTURE @{}]", (const void *)ptexdesc->ptex);
+            texturesInUse.erase(ptexdesc->ptex);
+            } else if (auto pbufdesc = get_if<ResourceDesc::Buffer>(&rd.v)) {
+            // Nothing to do for buffers
+            // assignBuffer(*pbufdesc);
+            }
+        };*/
     }
 
     Pass addPass(PrivateData, Setup, Execute)(string name, Setup setup, Execute execute)
@@ -161,6 +286,13 @@ class FrameGraph
 
     private 
     {
+        struct ReuseCache 
+        {
+            gfx.texture.Texture[] allTextures;
+            gfx.buffer.Buffer[] allBuffers;
+            bool[gfx.texture.Texture] textureInUse;
+        }
+
         static class SharedResource 
         {
             static struct Lifetime { 
@@ -174,25 +306,70 @@ class FrameGraph
             @property string name() const { return name_; }
 
             abstract SharedResource clone();
+            abstract void allocate(ref ReuseCache reuse);
+            abstract void release();
         }
 
-        static class Texture : SharedResource {
+        static class Texture : SharedResource 
+        {
             gfx.texture.Texture.Desc texdesc;
             gfx.texture.Texture texture;   // can be aliased
 
             override Texture clone() const { return null; }
+
+            override void allocate(ref ReuseCache reuse) 
+            {
+                foreach (t; reuse.allTextures) {
+                    if (t.desc == texdesc && !reuse.textureInUse[t]) {
+                        texture = t;
+                        reuse.textureInUse[t] = true;
+                        return;
+                    }
+                }
+                // create new texture
+                texture = new gfx.texture.Texture(texdesc);
+                reuse.textureInUse[texture] = true;
+                reuse.allTextures ~= texture;
+            }
+
+            override void release() 
+            {
+                if (texture)
+                    texture.release();
+            }
         }
 
-        static class Buffer : SharedResource {
+        static class Buffer : SharedResource 
+        {
             size_t size;
             gfx.buffer.Buffer.Usage bufferUsage;
             gfx.buffer.Buffer buffer;   // can be aliased
 
             override Buffer clone() const { return null; }
+            
+            // No aliasing
+            override void allocate(ref ReuseCache reuse) 
+            {
+                buffer = new gfx.buffer.Buffer(bufferUsage, size);
+                reuse.allBuffers ~= buffer;
+            }
+
+            override void release()
+            {
+                if (buffer)
+                    buffer.release();
+            }
         }
 
         class Pass
         {
+            void cleanup() 
+            {
+                foreach(r; creates) {
+                    r.actual.release();
+                }
+            }
+
             string name;
             Resource[] reads;
             Resource[] writes;
@@ -223,8 +400,8 @@ class FrameGraph
         }
         
         SharedResource[] resources;
-        gfx.buffer.Buffer[] buffers;
-        gfx.texture.Texture[] textures;
+        //gfx.buffer.Buffer[] buffers;
+        //gfx.texture.Texture[] textures;
         Pass[] passes;
     }
 }
@@ -263,7 +440,6 @@ private
     static enum aliasStr(alias U) = U.stringof;
     static string genBody(string fmt)(string[] names)
     {
-        import std.meta : staticMap;
         string outBody;
         foreach (a; names) {
             outBody ~= mixin(interp!fmt);
@@ -271,30 +447,7 @@ private
         return outBody;
     }
 
-    static template PassTypes(U) 
-    {
-        static if (is(U == gfx.buffer.Buffer)) 
-        {
-            struct DescriptorType {   
-                size_t size;
-                gfx.buffer.Buffer.Usage bufferUsage;
-                FrameGraph.ResourceUsage usage;
-            }
-            alias ResourceType = FrameGraph.Buffer;
-        }
-        else static if (is(U == gfx.texture.Texture)) 
-        { 
-            struct DescriptorType {
-                gfx.texture.Texture.Desc desc;
-                alias desc this;
-                FrameGraph.ResourceUsage usage;
-            }
-            alias ResourceType = FrameGraph.Texture;
-        }
-        else {
-            static assert(false, "Unsupported resource type: " ~ U.stringof);
-        }
-    }
+    
 }
 
 private static template MembersWithUDAs(T, UDAs...) 
@@ -329,6 +482,36 @@ template PassOutputs(T)
 
 template PassMetadata(T)
 {
+    static template PassTypes(U) 
+    {
+        static if (is(U == gfx.buffer.Buffer)) 
+        {
+            struct MetadataAndUsage {   
+                size_t size;
+                gfx.buffer.Buffer.Usage bufferUsage;
+                FrameGraph.ResourceUsage usage;
+            }
+            struct MetadataAndUsage {   
+                size_t size;
+                gfx.buffer.Buffer.Usage bufferUsage;
+                FrameGraph.ResourceUsage usage;
+            }
+            alias Resource = FrameGraph.Buffer;
+        }
+        else static if (is(U == gfx.texture.Texture)) 
+        { 
+            struct Metadata {
+                gfx.texture.Texture.Desc desc;
+                alias desc this;
+                FrameGraph.ResourceUsage usage;
+            }
+            alias Resource = FrameGraph.Texture;
+        }
+        else {
+            static assert(false, "Unsupported resource type: " ~ U.stringof);
+        }
+    }
+
     struct PassMetadata
     {
         import std.traits : getSymbolsByUDA;
@@ -336,9 +519,9 @@ template PassMetadata(T)
         private static enum ReadWrite = MembersWithUDAs!(T, Read, Write);
 
         // Read and write inputs/outputs
-        mixin(genBody!("const(PassTypes!(typeof(T.${a})).DescriptorType)* ${a};")(ReadWrite));  
+        mixin(genBody!("const(PassTypes!(typeof(T.${a})).Resource)* ${a};")(ReadWrite));  
         // Created transient resources
-        mixin(genBody!("PassTypes!(typeof(T.${a})).DescriptorType ${a};")(Created));  
+        mixin(genBody!("PassTypes!(typeof(T.${a})).Metadata ${a};")(Created));  
     }
 }
 
@@ -346,6 +529,8 @@ template addPass(T)
 {
     PassOutputs!T addPass(Inputs...)(FrameGraph fg, Inputs inputs)
     {
+        // For read/write: readonly metadata + writable flags
+        // For create: writable metadata + writable flags 
         PassMetadata!(T) creationMetadata;
 
         //fg.addPass()
@@ -368,13 +553,16 @@ struct GeometryBuffers
     //int width;
     //int height;
 
-    @Create Texture depth;
+    @Create 
+    //@FrameGraph.ResourceUsage.RenderTarget
+    Texture depth;
+
     @Create Texture normals;
     @Create Texture diffuse; 
     @Create Texture objectIDs;
     @Create Texture velocity;
 
-    bool setup(PassMetadata!(GeometryBuffers) md, int w, int h) 
+    bool setup(PassMetadata!(GeometryBuffers) metadata, int w, int h) 
     {
         // XXX Input texture descriptors should be immutable
         // Check at runtime?
