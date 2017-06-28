@@ -2,6 +2,9 @@ module engine.renderer.deferred;
 
 import core.types;
 import engine.frame_graph;
+import engine.pipeline;
+import engine.scene_object;
+import engine.mesh;
 import gfx.draw;
 import gfx.texture;
 import core.imageformat;
@@ -9,6 +12,7 @@ import core.imageformat;
 
 struct GeometryBuffersSetupPass
 {
+    mixin Pass;
     //int width;
     //int height;
 
@@ -20,32 +24,30 @@ struct GeometryBuffersSetupPass
         Texture velocity;
     }
 
-    bool setup(
-        ref PassMetadata!(GeometryBuffersSetupPass) md, 
-        int w, int h) 
+    bool setup(int w, int h) 
     {
-        with (md.depth) {
+        with (metadata.depth) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.D32_SFLOAT;
         }
 
-        with (md.normals) {
+        with (metadata.normals) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.A2R10G10B10_SNORM_PACK32;
         }
 
-        with (md.diffuse) {
+        with (metadata.diffuse) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.R8G8B8A8_SRGB;
         }
 
-        with (md.velocity) {
+        with (metadata.velocity) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
@@ -58,16 +60,13 @@ struct GeometryBuffersSetupPass
     void execute()
     {
     }
-
-    // Resource attributes:
-    // Input/Output/Mutable
-    // width, height, format
-    // constraints (i.e. say that two textures must have the same size)
 }
 
 
 struct RenderScenePass 
 {
+  mixin Pass;
+
   @Write {
     Texture depth;
     Texture normals;
@@ -76,7 +75,7 @@ struct RenderScenePass
     Texture velocity;
   }
 
-  bool setup(ref PassMetadata!(GeometryBuffersSetupPass) md) 
+  bool setup() 
   {
     // nothing to do
     return true;
@@ -90,6 +89,8 @@ struct RenderScenePass
 
 struct TemporalAAPass 
 {
+  mixin Pass;
+
   @Read {
     Texture frame;
   }
@@ -97,9 +98,10 @@ struct TemporalAAPass
   // persistent resource, so not managed by the frame graph
   Texture history;
 
-  bool setup(ref PassMetadata!(TemporalAAPass) md, Texture historyTex) 
+  bool setup(Texture historyTex) 
   {
     history = historyTex;
+    return true;
   }
 
 }

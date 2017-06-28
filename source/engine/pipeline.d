@@ -13,6 +13,13 @@ class GPUPipeline
 {
 }
 
+/// When should we cache?
+///     -> Once the description is loaded
+/// What should we cache?
+///     -> The program
+///     -> The VAO
+///     -> The loaded pipeline description
+///     -> all in one
 class GraphicsPipeline : GPUPipeline
 {
     static struct Desc
@@ -106,7 +113,7 @@ class GraphicsPipeline : GPUPipeline
     this(Cache cache_, in Desc desc_)
     {
         cache = cache_;
-        desc = desc_;
+        state.desc = desc_;
     }
 
     this(Cache cache_, string path) 
@@ -125,7 +132,12 @@ class GraphicsPipeline : GPUPipeline
         origPath = path;
         origSubpath = subpath;
         cache = cache_;
-        desc = Desc.fromFile(path, subpath);
+
+        //if (auto cachedDesc = getCachedResource!(Desc)(cache_, path ~ "$" ~ subpath)) {
+//
+       // }
+
+        state.desc = Desc.fromFile(path, subpath);
     }
 
     void compile()
@@ -137,39 +149,40 @@ class GraphicsPipeline : GPUPipeline
             return;
         }
 
-        if (vao) 
+        if (state.vao) 
         {
-            vao.release();
+            state.vao.release();
         }
 
-        if (prog) 
+        if (state.prog) 
         {        
-            prog.release();
+            state.prog.release();
         }
 
         ShaderSources ss;
-        ss.vertexShader.source = desc.vertexShader;
-        ss.fragmentShader.source = desc.fragmentShader;
-        ss.geometryShader.source = desc.geometryShader;
-        ss.tessControlShader.source = desc.tessControlShader;
-        ss.tessEvalShader.source = desc.tessEvalShader;
-        ss.vertexShader.path = desc.shaderFile;
-        ss.fragmentShader.path = desc.shaderFile;
-        ss.geometryShader.path = desc.shaderFile;
-        ss.tessControlShader.path = desc.shaderFile;
-        ss.tessEvalShader.path = desc.shaderFile;
+        ss.vertexShader.source = state.desc.vertexShader;
+        ss.fragmentShader.source = state.desc.fragmentShader;
+        ss.geometryShader.source = state.desc.geometryShader;
+        ss.tessControlShader.source = state.desc.tessControlShader;
+        ss.tessEvalShader.source = state.desc.tessEvalShader;
+        ss.vertexShader.path = state.desc.shaderFile;
+        ss.fragmentShader.path = state.desc.shaderFile;
+        ss.geometryShader.path = state.desc.shaderFile;
+        ss.tessControlShader.path = state.desc.shaderFile;
+        ss.tessEvalShader.path = state.desc.shaderFile;
         preprocessMultiShaderSources(ss, [], []);
         // create the program
-        prog = Program.create(Program.Desc(ss.vertexShader.source, ss.fragmentShader.source,
+        state.prog = Program.create(Program.Desc(ss.vertexShader.source, ss.fragmentShader.source,
                 ss.geometryShader.source, ss.tessControlShader.source, ss.tessEvalShader.source));
-        if (!prog.getLinkStatus()) {
+        if (!state.prog.getLinkStatus()) {
             errorMessage("Failed to compile program: %s(%s)", origPath, origSubpath);
         }
         // create the VAO
-        vao = new VertexArray(desc.layout);
-        debugMessage("desc.layout=%s",desc.layout);
-        // all done!
+        state.vao = new VertexArray(state.desc.layout);
+        debugMessage("desc.layout=%s",state.desc.layout);
+        // all done! (now put it in the cache)
         shouldRecompile = false;
+        //addCachedResource(cache, origPath ~ "$" ~ origSubpath, state);
     }
 
     void bind(ref StateGroup sg) 
@@ -178,25 +191,32 @@ class GraphicsPipeline : GPUPipeline
         //debugMessage("sg = %s", sg);
         //debugMessage("desc = %s", desc);
         //debugMessage("prog = %s, vao = %s", prog.object, vao.object);
-        if (prog && prog.valid)
+        if (state.prog && state.prog.valid)
         {
-            sg.program = prog.object;
-            sg.rasterizerState = desc.rasterizerState;
-            sg.depthStencilState = desc.depthStencilState;
-            sg.barrierBits = desc.barrierBits;
-            sg.blendStates = desc.blendState.dup;
-            sg.vertexArray = vao.object;
+            sg.program = state.prog.object;
+            sg.rasterizerState = state.desc.rasterizerState;
+            sg.depthStencilState = state.desc.depthStencilState;
+            sg.barrierBits = state.desc.barrierBits;
+            sg.blendStates = state.desc.blendState.dup;
+            sg.vertexArray = state.vao.object;
         }
     }
 
     string origPath;
     string origSubpath;
     Cache cache;
-    Desc desc;
-    // Shared
-    Program prog;
-    // Not shared
-    VertexArray vao;
+
+    struct CachedState 
+    { 
+        Desc desc;
+        // Shared
+        Program prog;
+        // Not shared
+        VertexArray vao;
+    }
+
+    CachedState state;
+   
     bool shouldRecompile = true;
 }
 

@@ -441,20 +441,16 @@ struct Read
 struct Write
 {}
 
-private 
+static string genBody(string fmt)(string[] names)
 {
-    static enum aliasStr(alias U) = U.stringof;
-    static string genBody(string fmt)(string[] names)
-    {
-        string outBody;
-        foreach (a; names) {
-            outBody ~= mixin(interp!fmt);
-        }
-        return outBody;
+    string outBody;
+    foreach (a; names) {
+        outBody ~= mixin(interp!fmt);
     }
+    return outBody;
 }
 
-private static template MembersWithUDAs(T, UDAs...) 
+static template MembersWithUDAs(T, UDAs...) 
 {
     string[] getMembersWithUDAs() 
     {
@@ -484,29 +480,6 @@ template PassOutputs(T)
     }
 }
 
-/*template ResourceMetadata(U)
-{
-    static if (is(U == gfx.buffer.Buffer)) 
-    {
-        struct Metadata {   
-            size_t size;
-            gfx.buffer.Buffer.Usage bufferUsage;
-        }
-        alias Resource = FrameGraph.Buffer;
-    }
-    else static if (is(U == gfx.texture.Texture)) 
-    { 
-        struct Metadata {
-            gfx.texture.Texture.Desc desc;
-            alias desc this;
-        }
-        alias Resource = FrameGraph.Texture;
-    }
-    else {
-        static assert(false, "Unsupported resource type: " ~ U.stringof);
-    }
-}*/
-
 template ConcreteToLogicalResource(T)
 {
     static if (is(T == gfx.buffer.Buffer)) {
@@ -517,8 +490,10 @@ template ConcreteToLogicalResource(T)
     }
 }
 
-template PassMetadata(T)
+mixin template Pass()
 {
+    import std.typecons : Unqual;
+    alias T = Unqual!(typeof(this));
     // Writable metadata, for resources created in the pass (@Create)
     static struct MetadataAndUsage(U) 
     {
@@ -545,15 +520,19 @@ template PassMetadata(T)
         // Created transient resources
         mixin(genBody!("MetadataAndUsage!(typeof(T.${a})) ${a};")(Created));  
     }
+
+    PassMetadata metadata;
+    pragma(msg, __traits(allMembers, PassMetadata));
 }
 
 template addPass(T) 
 {
-    PassOutputs!T addPass(Inputs...)(FrameGraph fg, Inputs inputs)
+    PassOutputs!T addPass(Inputs..., Args...)(FrameGraph fg, Tuple!(Inputs) inputs, Args args)
     {
         // For read/write: readonly metadata + writable flags
         // For create: writable metadata + writable flags 
-        PassMetadata!(T) creationMetadata;
+        //PassMetadata!(T) creationMetadata;
+        T pass;
 
         //fg.addPass()
         // TODO init metadata with data in attributes
@@ -577,11 +556,14 @@ template addPass(T)
 // - initial resource usage
 //
 // if @Create: const(Metadata)*, else Metadata
+//
+// addPass!(GeometryBuffersSetupPass)(frameGraph, tuple(...), ...);
+//
+
 
 struct GeometryBuffers
 {
-    //int width;
-    //int height;
+    mixin Pass;
 
     @Create {
         Texture depth;
@@ -591,32 +573,30 @@ struct GeometryBuffers
         Texture velocity;
     }
 
-    bool setup(
-        ref PassMetadata!(GeometryBuffers) md, 
-        int w, int h) 
+    bool setup(int w, int h) 
     {
-        with (md.depth) {
+        with (metadata.depth) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.D32_SFLOAT;
         }
 
-        with (md.normals) {
+        with (metadata.normals) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.A2R10G10B10_SNORM_PACK32;
         }
 
-        with (md.diffuse) {
+        with (metadata.diffuse) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.R8G8B8A8_SRGB;
         }
 
-        with (md.velocity) {
+        with (metadata.velocity) {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
@@ -629,6 +609,7 @@ struct GeometryBuffers
     void execute()
     {
     }
+    pragma(msg, __traits(allMembers, GeometryBuffers));
 
     // Resource attributes:
     // Input/Output/Mutable
