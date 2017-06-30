@@ -12,17 +12,18 @@ import core.imageformat;
 
 struct GeometryBuffersSetupPass
 {
-    mixin Pass;
-    //int width;
-    //int height;
-
-    @Create {
+    struct Resources 
+    {
+      @Create {
         Texture depth;
         Texture normals;
         Texture diffuse; 
         Texture objectIDs;
         Texture velocity;
+      }
     }
+
+    mixin Pass!(Resources);
 
     bool setup(int w, int h) 
     {
@@ -65,15 +66,18 @@ struct GeometryBuffersSetupPass
 
 struct RenderScenePass 
 {
-  mixin Pass;
-
-  @Write {
-    Texture depth;
-    Texture normals;
-    Texture diffuse; 
-    Texture objectIDs;
-    Texture velocity;
+  static struct Resources 
+  {
+    @Write {
+      Texture depth;
+      Texture normals;
+      Texture diffuse; 
+      Texture objectIDs;
+      Texture velocity;
+    }
   }
+
+  mixin Pass!(Resources);
 
   bool setup() 
   {
@@ -89,10 +93,11 @@ struct RenderScenePass
 
 struct TemporalAAPass 
 {
-  mixin Pass;
-
-  @Read {
-    Texture frame;
+  static struct Resources 
+  {
+    @Read {
+      Texture frame;
+    }
   }
 
   // persistent resource, so not managed by the frame graph

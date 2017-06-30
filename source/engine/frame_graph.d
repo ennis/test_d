@@ -490,12 +490,10 @@ template ConcreteToLogicalResource(T)
     }
 }
 
-mixin template Pass()
+mixin template Pass(T)
 {
-    import std.typecons : Unqual;
-    alias T = Unqual!(typeof(this));
     // Writable metadata, for resources created in the pass (@Create)
-    static struct MetadataAndUsage(U) 
+    struct MetadataAndUsage(U) 
     {
         ConcreteToLogicalResource!(U).Metadata metadata;
         alias metadata this; 
@@ -503,31 +501,56 @@ mixin template Pass()
     }
 
     // Constant metadata, for resources created outside the pass (@Read, @Write)
-    static struct ConstMetadataAndUsage(U)
+    struct ConstMetadataAndUsage(U)
     {
         const(ConcreteToLogicalResource!(U).Metadata)* metadata;
         alias metadata this; 
         FrameGraph.ResourceUsage usage;
     }
 
-    struct PassMetadata
+    struct Metadata
     {
-        private static enum Created = MembersWithUDAs!(T, Create);
-        private static enum ReadWrite = MembersWithUDAs!(T, Read, Write);
-
         // Read and write inputs/outputs
-        mixin(genBody!("ConstMetadataAndUsage!(typeof(T.${a})) ${a};")(ReadWrite));  
+        mixin(genBody!(q{
+            ConstMetadataAndUsage!(typeof(T.${a})) ${a};
+        })(MembersWithUDAs!(T, Read, Write)));
+
         // Created transient resources
-        mixin(genBody!("MetadataAndUsage!(typeof(T.${a})) ${a};")(Created));  
+        mixin(genBody!(q{
+            MetadataAndUsage!(typeof(T.${a})) ${a};
+        })(MembersWithUDAs!(T, Create)));  
     }
 
-    PassMetadata metadata;
-    pragma(msg, __traits(allMembers, PassMetadata));
+    struct Handles 
+    {
+        mixin(genBody!(q{
+            FrameGraph.Handle ${a};
+        })(MembersWithUDAs!(T, Read, Write, Create)));
+    }
+
+    T resources;
+    alias resources this;
+    Metadata metadata;
+    Handles handles;
 }
+
+// 1. Expand mixin template at instantiation site
+// 2. Build list of members: Type + name
+// 3. Resolve types
+//      -> Resolve Metadata 
+//          -> Instantiate MembersWithUDAs!(T, Read, Write)
+//              -> Reflection request: __traits(allMembers, T): resolve all members of T
+//                  (-> Resolve Metadata)
+//                  -> Resolve Handles
+//                       -> Instantiate MembersWithUDAs!(T, Read, Write) *** error here (infinite loop detected?) ***
+//
+// When a template instantiation instantiates the same exact template, error (infinite loop)
+// However, 
 
 template addPass(T) 
 {
-    PassOutputs!T addPass(Inputs..., Args...)(FrameGraph fg, Tuple!(Inputs) inputs, Args args)
+    PassOutputs!T addPass(InputTuple, Args...)(FrameGraph fg, InputTuple inputs, Args args) 
+    if (is(InputTuple : Tuple!(Inputs), Inputs...))
     {
         // For read/write: readonly metadata + writable flags
         // For create: writable metadata + writable flags 
@@ -563,15 +586,22 @@ template addPass(T)
 
 struct GeometryBuffers
 {
-    mixin Pass;
+    struct Resources 
+    {
+        @Read {
+            Texture initial;
+        }
 
-    @Create {
-        Texture depth;
-        Texture normals;
-        Texture diffuse; 
-        Texture objectIDs;
-        Texture velocity;
+        @Create {
+            Texture depth;
+            Texture normals;
+            Texture diffuse; 
+            Texture objectIDs;
+            Texture velocity;
+        }
     }
+
+    mixin Pass!(Resources);
 
     bool setup(int w, int h) 
     {
@@ -609,8 +639,6 @@ struct GeometryBuffers
     void execute()
     {
     }
-    pragma(msg, __traits(allMembers, GeometryBuffers));
-
     // Resource attributes:
     // Input/Output/Mutable
     // width, height, format
