@@ -9,9 +9,10 @@ import gfx.buffer;
 import std.typecons;
 import std.variant;
 
-class FrameGraph 
+class FrameGraph
 {
-    enum ResourceUsage {
+    enum ResourceUsage
+    {
         Default,
         ImageReadWrite,
         SampledTexture,
@@ -20,10 +21,11 @@ class FrameGraph
     }
 
     // Renamed resource handle
-    static struct Handle {
-        LogicalResource resource;      // pointer to the actual resource entry (Texture or buffer)
-        ResourceUsage usage;    // how is the resource used
-        int renameIndex;        // SSA index
+    static struct Handle
+    {
+        LogicalResource resource; // pointer to the actual resource entry (Texture or buffer)
+        ResourceUsage usage; // how is the resource used
+        int renameIndex; // SSA index
     }
 
     /*static struct TextureResource {
@@ -50,7 +52,7 @@ class FrameGraph
         @property auto resource() const { return (cast(Buffer)actual).buffer; }
     }*/
 
-    struct PassBuilder 
+    struct PassBuilder
     {
         // add r as a read dependency, specify usage
         Handle read(Handle r, ResourceUsage usage)
@@ -62,7 +64,7 @@ class FrameGraph
 
         Handle write(Handle r, ResourceUsage usage)
         {
-            auto w = Handle(r.resource, usage, r.renameIndex+1);
+            auto w = Handle(r.resource, usage, r.renameIndex + 1);
             pass.writes ~= w;
             return w;
         }
@@ -75,7 +77,7 @@ class FrameGraph
             return c;
         }
 
-        Handle createBuffer(size_t size, gfx.buffer.Buffer.Usage bufferUsage, ResourceUsage usage) 
+        Handle createBuffer(size_t size, gfx.buffer.Buffer.Usage bufferUsage, ResourceUsage usage)
         {
             auto buf = fg.createBuffer(size, bufferUsage);
             auto c = Handle(buf, usage, 0);
@@ -87,49 +89,54 @@ class FrameGraph
         Pass pass;
     }
 
-    void compile() 
+    void compile()
     {
         bool hasWriteConflicts = false;
-        int[LogicalResource] r_ren;    // read rename list (contains the rename index that
-                        // should appear for the next read from a resource)
-        int[LogicalResource] w_ren;    // write rename list (contains the rename index that
-                        // should appear for the next write to a resource)
-        
+        int[LogicalResource] r_ren; // read rename list (contains the rename index that
+        // should appear for the next read from a resource)
+        int[LogicalResource] w_ren; // write rename list (contains the rename index that
+        // should appear for the next write to a resource)
+
         // first pass: lifetime calculation and concurrent resource usage detection
         foreach (passIndex, pass; passes)
         {
-            foreach (r; pass.reads) {
-                if (r_ren[r.resource] > r.renameIndex) {
-                    warningMessage(
-                        "[FrameGraph] read/write conflict detected on resource %s.%s",
-                        r.resource.name, r.renameIndex);
+            foreach (r; pass.reads)
+            {
+                if (r_ren[r.resource] > r.renameIndex)
+                {
+                    warningMessage("[FrameGraph] read/write conflict detected on resource %s.%s",
+                            r.resource.name, r.renameIndex);
                     hasWriteConflicts = true;
                 }
-                else 
+                else
                 {
                     w_ren[r.resource] = r.renameIndex + 1;
                 }
                 // update lifetime end
                 // resource is read during this pass, so the resource must outlive the pass
-                if (r.resource.lifetime.end < passIndex) {
-                    r.resource.lifetime.end = cast(int)passIndex;
+                if (r.resource.lifetime.end < passIndex)
+                {
+                    r.resource.lifetime.end = cast(int) passIndex;
                 }
             }
 
-            foreach (w; pass.writes) 
+            foreach (w; pass.writes)
             {
-                if (w.resource.lifetime.begin == -1) {
-                    w.resource.lifetime.begin = cast(int)passIndex;
+                if (w.resource.lifetime.begin == -1)
+                {
+                    w.resource.lifetime.begin = cast(int) passIndex;
                 }
 
                 // Note: p.writes should not contain the same resource twice with a
                 // different rename index
-                if (w_ren[w.resource] > w.renameIndex) {
-                    warningMessage(
-                        "[FrameGraph] read/write conflict detected on resource %s.%s",
-                        w.resource.name, w.renameIndex);
+                if (w.resource in w_ren && w_ren[w.resource] > w.renameIndex)
+                {
+                    warningMessage("[FrameGraph] read/write conflict detected on resource %s.%s",
+                            w.resource.name, w.renameIndex);
                     hasWriteConflicts = true;
-                } else {
+                }
+                else
+                {
                     // the next pass cannot use this rename for write operations
                     //AG_DEBUG("write rename index for {}: .{} -> .{}", w.handle,
                     //         w.renameIndex, w.renameIndex + 1);
@@ -142,19 +149,23 @@ class FrameGraph
         // Second pass: resource allocation
         ReuseCache reuseCache;
 
-        foreach (passIndex, p; passes) 
+        foreach (passIndex, p; passes)
         {
             //AG_DEBUG("** PASS {}", p->name);
             // create resources that should be created
-            foreach (create; p.creates) {
+            foreach (create; p.creates)
+            {
                 create.resource.allocate(reuseCache);
             }
 
             // release read-from resources that should be released on this pass
-            foreach (read; p.reads) {
+            foreach (read; p.reads)
+            {
                 auto resource = read.resource;
-                if (resource.lifetime.end <= passIndex) {
-                    if (auto texres = cast(TextureResource)resource) {
+                if (resource.lifetime.end <= passIndex)
+                {
+                    if (auto texres = cast(TextureResource) resource)
+                    {
                         // if it's a texture, add it into the reuse cache for recycling
                         reuseCache.textureInUse[texres.texture] = false;
                     }
@@ -164,16 +175,18 @@ class FrameGraph
 
         // Print statistics about the allocated resources
         debugMessage("====== TEXTURES: ======");
-        foreach (tex; reuseCache.allTextures) {
+        foreach (tex; reuseCache.allTextures)
+        {
             import std.conv : to;
             import std.format : format;
+
             immutable typeStr = to!string(tex.dimensions);
             immutable formatStr = to!string(tex.format);
             string dbg = typeStr ~ ",";
 
-            final switch (tex.dimensions) 
+            final switch (tex.dimensions)
             {
-            case ImageDimensions.Image1D: 
+            case ImageDimensions.Image1D:
                 dbg ~= format("%s", tex.width);
                 break;
             case ImageDimensions.Image1DArray:
@@ -183,7 +196,8 @@ class FrameGraph
                 dbg ~= format("%sx%s", tex.width, tex.height);
                 break;
             case ImageDimensions.Image3D:
-                dbg ~= format("%sx%sx%s", tex.width, tex.height, tex.depth);
+                dbg ~= format("%sx%sx%s", tex.width,
+                        tex.height, tex.depth);
                 break;
             case ImageDimensions.Image3DArray:
                 dbg ~= format("<???>");
@@ -192,19 +206,22 @@ class FrameGraph
 
             dbg ~= format(",%s miplevels,", tex.numMipLevels);
 
-            if (tex.options & gfx.texture.Texture.Options.SparseStorage) {
+            if (tex.options & gfx.texture.Texture.Options.SparseStorage)
+            {
                 dbg ~= "(Sparse)";
             }
             debugMessage("%s", dbg);
         }
 
         debugMessage("====== BUFFERS: ======");
-        foreach (buf; reuseCache.allBuffers) {
+        foreach (buf; reuseCache.allBuffers)
+        {
             import std.conv : to;
+
             debugMessage("%s bytes, usage %s", buf.size, buf.usage);
         }
 
-       /* auto assignTexture = [&](ResourceDesc::Texture &texdesc) {
+        /* auto assignTexture = [&](ResourceDesc::Texture &texdesc) {
             for (auto &&tex : textures) {
             if (texturesInUse.count(tex.get()))
                 continue;
@@ -237,7 +254,7 @@ class FrameGraph
             bufdesc.buf = pbuf;
         };*/
 
-       /* auto assignCompatibleResource = [&](ResourceDesc &rd) {
+        /* auto assignCompatibleResource = [&](ResourceDesc &rd) {
             if (auto ptexdesc = get_if<ResourceDesc::Texture>(&rd.v)) {
             assignTexture(*ptexdesc);
             } else if (auto pbufdesc = get_if<ResourceDesc::Buffer>(&rd.v)) {
@@ -257,7 +274,7 @@ class FrameGraph
         };*/
     }
 
-    Pass addPass(PrivateData, Setup, Execute)(string name, Setup setup, Execute execute)
+    PrivateData* createPass(PrivateData, Setup, Execute)(string name, Setup setup, Execute execute)
     {
         auto pass = new Pass();
         auto passBuilder = PassBuilder(this, pass);
@@ -268,42 +285,44 @@ class FrameGraph
         pass.execCallback = (Pass p) {
             //execute()
         };
+        passes ~= pass;
+        return privateData;
     }
 
-    PassOutputs!T addPass(T, Args...)(Args args)
+    private
     {
-
-    }
-
-    private 
-    {
-        struct ReuseCache 
+        struct ReuseCache
         {
             gfx.texture.Texture[] allTextures;
             gfx.buffer.Buffer[] allBuffers;
             bool[gfx.texture.Texture] textureInUse;
         }
 
-        static class LogicalResource 
+        static class LogicalResource
         {
-            static struct Lifetime { 
-                int begin = -1; 
-                int end = -1; 
+            static struct Lifetime
+            {
+                int begin = -1;
+                int end = -1;
             }
+
             Lifetime lifetime;
             string name_;
-            int lastRenameIndex = 0;    // last seen SSA index
-            
-            @property string name() const { return name_; }
+            int lastRenameIndex = 0; // last seen SSA index
+
+            @property string name() const
+            {
+                return name_;
+            }
 
             abstract LogicalResource clone();
             abstract void allocate(ref ReuseCache reuse);
             abstract void release();
         }
 
-        static class TextureResource : LogicalResource 
+        static class TextureResource : LogicalResource
         {
-            static struct Metadata 
+            static struct Metadata
             {
                 gfx.texture.Texture.Desc desc;
                 alias desc this;
@@ -312,14 +331,19 @@ class FrameGraph
             alias ConcreteResource = gfx.texture.Texture;
 
             Metadata md;
-            gfx.texture.Texture texture;   // can be aliased
+            gfx.texture.Texture texture; // can be aliased
 
-            override TextureResource clone() const { return null; }
-
-            override void allocate(ref ReuseCache reuse) 
+            override TextureResource clone() const
             {
-                foreach (t; reuse.allTextures) {
-                    if (t.desc == md.desc && !reuse.textureInUse[t]) {
+                return null;
+            }
+
+            override void allocate(ref ReuseCache reuse)
+            {
+                foreach (t; reuse.allTextures)
+                {
+                    if (t.desc == md.desc && !reuse.textureInUse[t])
+                    {
                         texture = t;
                         reuse.textureInUse[t] = true;
                         return;
@@ -331,16 +355,16 @@ class FrameGraph
                 reuse.allTextures ~= texture;
             }
 
-            override void release() 
+            override void release()
             {
                 if (texture)
                     texture.release();
             }
         }
 
-        static class BufferResource : LogicalResource 
+        static class BufferResource : LogicalResource
         {
-            static struct Metadata 
+            static struct Metadata
             {
                 size_t size;
                 gfx.buffer.Buffer.Usage bufferUsage;
@@ -349,12 +373,15 @@ class FrameGraph
             alias ConcreteResource = gfx.buffer.Buffer;
 
             Metadata md;
-            gfx.buffer.Buffer buffer;   // can be aliased
+            gfx.buffer.Buffer buffer; // can be aliased
 
-            override BufferResource clone() const { return null; }
-            
+            override BufferResource clone() const
+            {
+                return null;
+            }
+
             // No aliasing
-            override void allocate(ref ReuseCache reuse) 
+            override void allocate(ref ReuseCache reuse)
             {
                 buffer = new gfx.buffer.Buffer(md.bufferUsage, md.size);
                 reuse.allBuffers ~= buffer;
@@ -369,9 +396,10 @@ class FrameGraph
 
         class Pass
         {
-            void cleanup() 
+            void cleanup()
             {
-                foreach(r; creates) {
+                foreach (r; creates)
+                {
                     r.resource.release();
                 }
             }
@@ -387,7 +415,7 @@ class FrameGraph
         }
 
         // Create a transient texture
-        TextureResource createTexture(ref const(gfx.texture.Texture.Desc) desc) 
+        TextureResource createTexture(ref const(gfx.texture.Texture.Desc) desc)
         {
             auto tex = new TextureResource();
             tex.md.desc = desc;
@@ -404,7 +432,7 @@ class FrameGraph
             resources ~= buf;
             return buf;
         }
-        
+
         LogicalResource[] resources;
         //gfx.buffer.Buffer[] buffers;
         //gfx.texture.Texture[] textures;
@@ -431,34 +459,41 @@ class FrameGraph
 // Descriptor => metadata
 // 
 
-
 struct Create
-{}
+{
+}
 
 struct Read
-{}
+{
+}
 
 struct Write
-{}
+{
+}
 
 static string genBody(string fmt)(string[] names)
 {
     string outBody;
-    foreach (a; names) {
+    foreach (a; names)
+    {
         outBody ~= mixin(interp!fmt);
     }
     return outBody;
 }
 
-static template MembersWithUDAs(T, UDAs...) 
+static template MembersWithUDAs(T, UDAs...)
 {
-    string[] getMembersWithUDAs() 
+    string[] getMembersWithUDAs()
     {
         import std.traits : hasUDA;
+
         string[] result;
-        foreach (m; __traits(allMembers, T)) {
-            foreach (UDA; UDAs) {
-                if (hasUDA!(__traits(getMember, T, m), UDA)) {
+        foreach (m; __traits(allMembers, T))
+        {
+            foreach (UDA; UDAs)
+            {
+                if (hasUDA!(__traits(getMember, T, m), UDA))
+                {
                     result ~= m;
                 }
             }
@@ -466,47 +501,39 @@ static template MembersWithUDAs(T, UDAs...)
         return result;
     }
 
-    enum MembersWithUDAs = getMembersWithUDAs(); 
-} 
-
-
-template PassOutputs(T)
-{
-    struct PassOutputs
-    {
-        static enum Outputs = MembersWithUDAs!(T, Write, Create);
-        static enum numOutputs = Outputs.length;
-        mixin(genBody!("const(PassTypes!(typeof(T.${a})).ResourceType) ${a};")(Outputs));    
-    }
+    enum MembersWithUDAs = getMembersWithUDAs();
 }
 
 template ConcreteToLogicalResource(T)
 {
-    static if (is(T == gfx.buffer.Buffer)) {
+    static if (is(T == gfx.buffer.Buffer))
+    {
         alias ConcreteToLogicalResource = FrameGraph.BufferResource;
     }
-    else static if (is(T == gfx.texture.Texture)) {
+    else static if (is(T == gfx.texture.Texture))
+    {
         alias ConcreteToLogicalResource = FrameGraph.TextureResource;
     }
 }
 
+// Writable metadata, for resources created in the pass (@Create)
+struct MetadataAndUsage(U)
+{
+    ConcreteToLogicalResource!(U).Metadata metadata;
+    alias metadata this;
+    FrameGraph.ResourceUsage usage;
+}
+
+// Constant metadata, for resources created outside the pass (@Read, @Write)
+struct ConstMetadataAndUsage(U)
+{
+    const(ConcreteToLogicalResource!(U).Metadata)* metadata;
+    alias metadata this;
+    FrameGraph.ResourceUsage usage;
+}
+
 mixin template Pass(T)
 {
-    // Writable metadata, for resources created in the pass (@Create)
-    struct MetadataAndUsage(U) 
-    {
-        ConcreteToLogicalResource!(U).Metadata metadata;
-        alias metadata this; 
-        FrameGraph.ResourceUsage usage;
-    }
-
-    // Constant metadata, for resources created outside the pass (@Read, @Write)
-    struct ConstMetadataAndUsage(U)
-    {
-        const(ConcreteToLogicalResource!(U).Metadata)* metadata;
-        alias metadata this; 
-        FrameGraph.ResourceUsage usage;
-    }
 
     struct Metadata
     {
@@ -518,10 +545,10 @@ mixin template Pass(T)
         // Created transient resources
         mixin(genBody!(q{
             MetadataAndUsage!(typeof(T.${a})) ${a};
-        })(MembersWithUDAs!(T, Create)));  
+        })(MembersWithUDAs!(T, Create)));
     }
 
-    struct Handles 
+    struct Handles
     {
         mixin(genBody!(q{
             FrameGraph.Handle ${a};
@@ -534,37 +561,113 @@ mixin template Pass(T)
     Handles handles;
 }
 
-// 1. Expand mixin template at instantiation site
-// 2. Build list of members: Type + name
-// 3. Resolve types
-//      -> Resolve Metadata 
-//          -> Instantiate MembersWithUDAs!(T, Read, Write)
-//              -> Reflection request: __traits(allMembers, T): resolve all members of T
-//                  (-> Resolve Metadata)
-//                  -> Resolve Handles
-//                       -> Instantiate MembersWithUDAs!(T, Read, Write) *** error here (infinite loop detected?) ***
-//
-// When a template instantiation instantiates the same exact template, error (infinite loop)
-// However, 
+// PassTypes
+// 
 
-template addPass(T) 
+template addPass(T)
 {
-    PassOutputs!T addPass(InputTuple, Args...)(FrameGraph fg, InputTuple inputs, Args args) 
-    if (is(InputTuple : Tuple!(Inputs), Inputs...))
+    // helper function to get the metadata of a handle
+    auto getMetadata(U)(FrameGraph.Handle h)
     {
-        // For read/write: readonly metadata + writable flags
-        // For create: writable metadata + writable flags 
-        //PassMetadata!(T) creationMetadata;
-        T pass;
-
-        //fg.addPass()
-        // TODO init metadata with data in attributes
-        foreach (i; inputs) {
-
-            // cast input to expected Resource type (Texture or Buffer)
-            // Verify against metadata already present
-            // register Resource as input
+        static if (is(U == FrameGraph.BufferResource))
+        {
+            return &(cast(FrameGraph.BufferResource) h.resource).md;
         }
+        else static if (is(U == FrameGraph.TextureResource))
+        {
+            return &(cast(FrameGraph.TextureResource) h.resource).md;
+        }
+        else
+            static assert(false, "Unexpected type");
+    }
+
+    auto createResource(MD)(FrameGraph.PassBuilder passBuilder, ref MD metadata)
+    {
+        static if (is(MD == MetadataAndUsage!(gfx.buffer.Buffer)))
+        {
+            return passBuilder.createBuffer(metadata.size, metadata.bufferUsage, metadata.usage);
+        }
+        else static if (is(MD == MetadataAndUsage!(gfx.texture.Texture)))
+        {
+            return passBuilder.createTexture(metadata.desc, metadata.usage);
+        }
+        else
+            static assert(false, "Unexpected type");
+    }
+
+    auto addPass(InputTuple, Args...)(FrameGraph fg, InputTuple inputs, Args args)
+            if (is(InputTuple : Tuple!(Inputs), Inputs...))
+    {
+        import std.traits : hasUDA;
+        import std.meta : aliasSeqOf;
+        immutable inputNames = MembersWithUDAs!(typeof(T.resources), Read, Write);
+
+        auto passData = fg.createPass!(T)(T.stringof,
+        ///////////////////// SETUP /////////////////////
+        (ref FrameGraph.PassBuilder pb, ref T data) {
+            auto passResources = &data.resources;
+            auto passHandles = &data.handles;
+            auto passMetadata = &data.metadata;
+            // Set metadata for inputs
+            foreach (i, input; inputs.expand)
+            {
+                __traits(getMember, passMetadata, inputNames[i]).metadata = getMetadata!(
+                    ConcreteToLogicalResource!(typeof(__traits(getMember,
+                    passResources, inputNames[i]))))(input);
+
+                debugMessage("input %s", inputNames[i]);
+            }
+            // Call setup
+            data.setup(args); 
+            // Register inputs
+            foreach (i, input; inputs.expand)
+            { 
+                if (hasUDA!(__traits(getMember, typeof(data.resources), inputNames[i]), Read))
+                {
+                    // Read access
+                    __traits(getMember, passHandles, inputNames[i]) = pb.read(input, __traits(getMember, passMetadata, inputNames[i]).usage);
+                }
+                else
+                {
+                    // Write access
+                    __traits(getMember, passHandles, inputNames[i]) = pb.write(input, __traits(getMember, passMetadata, inputNames[i]).usage);
+                }
+            }
+            // Create pass resources
+            foreach (created; aliasSeqOf!(MembersWithUDAs!(typeof(T.resources), Create)))
+            {
+                __traits(getMember, passHandles, created) = createResource(pb,
+                    __traits(getMember, passMetadata, created));
+            }
+        },
+        ///////////////////// EXECUTE /////////////////////
+        (ref T data) {
+            // copy concrete resources
+            auto passResources = &data.resources;
+            auto passHandles = &data.handles;
+            foreach (res; aliasSeqOf!([__traits(allMembers, typeof(data.resources))]))
+            {
+                __traits(getMember, passResources, res) = cast(typeof(__traits(getMember,
+                    passResources, res)))(__traits(getMember, passHandles, res).resource);
+            }
+            // execute
+            data.execute();
+        });
+
+        static struct PassOutputs
+        {
+            mixin(genBody!("FrameGraph.Handle ${a};")(MembersWithUDAs!(typeof(T.resources), Create, Write)));
+        }
+
+        // Init outputs
+        PassOutputs outputs;
+        auto passHandles = &passData.handles;
+        foreach (output; __traits(allMembers, PassOutputs))
+        {
+            __traits(getMember, outputs, output) = __traits(getMember, passHandles, output);
+        }
+
+        return outputs;
     }
 }
 
@@ -583,19 +686,20 @@ template addPass(T)
 // addPass!(GeometryBuffersSetupPass)(frameGraph, tuple(...), ...);
 //
 
-
 struct GeometryBuffers
 {
-    struct Resources 
+    struct Resources
     {
-        @Read {
+        @Read
+        {
             Texture initial;
         }
 
-        @Create {
+        @Create
+        {
             Texture depth;
             Texture normals;
-            Texture diffuse; 
+            Texture diffuse;
             Texture objectIDs;
             Texture velocity;
         }
@@ -603,30 +707,34 @@ struct GeometryBuffers
 
     mixin Pass!(Resources);
 
-    bool setup(int w, int h) 
+    bool setup(int w, int h)
     {
-        with (metadata.depth) {
+        with (metadata.depth)
+        {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.D32_SFLOAT;
         }
 
-        with (metadata.normals) {
+        with (metadata.normals)
+        {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.A2R10G10B10_SNORM_PACK32;
         }
 
-        with (metadata.diffuse) {
+        with (metadata.diffuse)
+        {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
             fmt = ImageFormat.R8G8B8A8_SRGB;
         }
 
-        with (metadata.velocity) {
+        with (metadata.velocity)
+        {
             width = w;
             height = h;
             usage = FrameGraph.ResourceUsage.RenderTarget;
@@ -644,12 +752,17 @@ struct GeometryBuffers
     // width, height, format
     // constraints (i.e. say that two textures must have the same size)
 }
-    
-    //pragma(msg, __traits(allMembers, Pass!(GeometryBuffers).Outputs));
 
-unittest 
+//pragma(msg, __traits(allMembers, Pass!(GeometryBuffers).Outputs));
+
+unittest
 {
+    FrameGraph fg;
+    FrameGraph.Handle h1;
+    FrameGraph.Handle h2;
 
+    auto outputs = fg.addPass!(GeometryBuffers)(tuple(), 640, 480);
+    static assert(__traits(compiles, outputs.normals));
 }
 
 //

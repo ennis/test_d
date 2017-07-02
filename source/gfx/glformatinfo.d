@@ -15,38 +15,203 @@ struct GLFormatInfo
 
 immutable GLFormatInfo glfmt_rgba8_unorm = GLFormatInfo(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 4, 4);
 
+enum GLFormatInfo[ImageFormat] CT_GLFormatInfos = [
+    ImageFormat.UNDEFINED: GLFormatInfo(0, 0, 0, 0, 0),
+    ImageFormat.R4G4_UNORM_PACK8: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R4G4B4A4_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B4G4R4A4_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R5G6B5_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B5G6R5_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R5G5B5A1_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B5G5R5A1_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A1R5G5B5_UNORM_PACK16: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8_UNORM: GLFormatInfo(GL_R8, 0, 0, 0, 0),
+    ImageFormat.R8_SNORM: GLFormatInfo(GL_R8_SNORM, 0, 0, 0, 0),
+    ImageFormat.R8_USCALED: GLFormatInfo(GL_R8, 0, 0, 0, 0),
+    ImageFormat.R8_SSCALED: GLFormatInfo(GL_R8_SNORM, 0, 0, 0, 0),
+    ImageFormat.R8_UINT: GLFormatInfo(GL_R8UI, 0, 0, 0, 0),
+    ImageFormat.R8_SINT: GLFormatInfo(GL_R8I, 0, 0, 0, 0),
+    ImageFormat.R8_SRGB: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8_SRGB: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8_SRGB: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8_SRGB: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R8G8B8A8_SRGB: GLFormatInfo(GL_SRGB8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B8G8R8A8_SRGB: GLFormatInfo(GL_SRGB8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_UNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_SNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_USCALED_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_SSCALED_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_UINT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_SINT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A8B8G8R8_SRGB_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2R10G10B10_UNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2R10G10B10_SNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2R10G10B10_USCALED_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2R10G10B10_SSCALED_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2R10G10B10_UINT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2R10G10B10_SINT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2B10G10R10_UNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2B10G10R10_SNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2B10G10R10_USCALED_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2B10G10R10_SSCALED_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2B10G10R10_UINT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.A2B10G10R10_SINT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_SNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_USCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_SSCALED: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R16G16B16A16_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32B32_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32B32_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32B32_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32B32A32_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32B32A32_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R32G32B32A32_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64B64_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64B64_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64B64_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64B64A64_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64B64A64_SINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.R64G64B64A64_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.B10G11R11_UFLOAT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.E5B9G9R9_UFLOAT_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.D16_UNORM: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.X8_D24_UNORM_PACK32: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.D32_SFLOAT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.S8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.D16_UNORM_S8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.D24_UNORM_S8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.D32_SFLOAT_S8_UINT: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC1_RGB_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC1_RGB_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC1_RGBA_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC1_RGBA_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC2_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC2_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC3_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC3_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC4_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC4_SNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC5_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC5_SNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC6H_UFLOAT_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC6H_SFLOAT_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC7_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.BC7_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ETC2_R8G8B8_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ETC2_R8G8B8_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ETC2_R8G8B8A1_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ETC2_R8G8B8A1_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ETC2_R8G8B8A8_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ETC2_R8G8B8A8_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.EAC_R11_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.EAC_R11_SNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.EAC_R11G11_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.EAC_R11G11_SNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_4x4_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_4x4_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_5x4_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_5x4_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_5x5_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_5x5_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_6x5_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_6x5_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_6x6_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_6x6_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_8x5_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_8x5_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_8x6_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_8x6_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_8x8_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_8x8_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x5_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x5_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x6_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x6_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x8_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x8_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x10_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_10x10_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_12x10_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_12x10_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_12x12_UNORM_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+    ImageFormat.ASTC_12x12_SRGB_BLOCK: GLFormatInfo(GL_RGBA8, 0, 0, 0, 0),
+];
+
+immutable GLFormatInfo[ImageFormat] GLFormatInfos;
+
+static this()
+{
+    import std.exception : assumeUnique;
+    GLFormatInfos = CT_GLFormatInfos;
+}
+
 ref const(GLFormatInfo) getGLImageFormatInfo(ImageFormat fmt)
 {
-    switch (fmt)
-    {
-   // case ImageFormat.R32G32B32A32_UINT:
-    //    return glfmt_rgba32_uint;
-    //case ImageFormat.R16G16B16A16_SFLOAT:
-    //    return glfmt_rgba16_float;
-    case ImageFormat.R8G8B8A8_UNORM:
-        return glfmt_rgba8_unorm;
-    //case ImageFormat.R8G8B8A8_SNORM:
-    //    return glfmt_r8_unorm;
-   // case ImageFormat.R32_SFLOAT:
-    //    return glfmt_r32_float;
-   // case ImageFormat.R32G32_SFLOAT:
-   //     return glfmt_rg32_float;
-   // case ImageFormat.R32G32B32A32_SFLOAT:
-   //     return glfmt_rgba32_float;
-   // case ImageFormat.D32_SFLOAT:
-   //     return glfmt_depth32_float;
-   // case ImageFormat.A2R10G10B10_UNORM_PACK32:
-    //    return glfmt_argb_10_10_10_2_unorm;
-   // case ImageFormat.R8G8B8A8_SRGB:
-   //     return glfmt_rgba8_unorm_srgb;
-   // case ImageFormat.R16G16_SFLOAT:
-   //     return glfmt_rg16_float;
-   // case ImageFormat.R16G16_SINT:
-   //     return glfmt_rg16_sint;
-   // case ImageFormat.A2R10G10B10_SNORM_PACK32:
-        // return glfmt_argb_10_10_10_2_snorm;   // there is no signed version of this
-        // format in OpenGL
-    default:
-        assert(false, "Unsupported image format");
-    }
+    return CT_GLFormatInfos[fmt];
 }

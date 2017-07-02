@@ -12,7 +12,7 @@ import gfx.state_group;
 import glad.gl.loader;
 import std.exception;
 import core.memory;
-import core.unique;
+//import core.unique;
 import core.idtable;
 import engine.scene_loader;
 import engine.scene;
@@ -20,10 +20,14 @@ import engine.scene_object;
 import engine.camera_control;
 import core.cache;
 
+import engine.frame_graph;
+import engine.renderer.deferred;
+
 import imgui_glfw;
 import derelict.imgui.imgui;
+import std.typecons;
 
-struct UIName 
+struct UIName
 {
 	string name;
 }
@@ -50,12 +54,12 @@ struct Entity
 	Unique!string name;
 }
 
-struct Component 
+struct Component
 {
 	@UIName("Range")
 	@UISliderFloat(0.0f, 1.0f)
 	float range;
-	
+
 	@UIName("Stuff")
 	@UISliderInt(0, 100)
 	int stuff;
@@ -67,51 +71,61 @@ void igGenericGUI(T)(string name, auto ref T val) if (is(T == struct))
 {
 	import std.traits : hasUDA, getUDAs;
 
-	foreach (m; __traits(allMembers, T)) {
+	foreach (m; __traits(allMembers, T))
+	{
 		//pragma(msg, "[GUI struct member: " ~ m ~ "]");
 		auto mm = &__traits(getMember, val, m);
 		alias MT = typeof(__traits(getMember, val, m));
 
 		string memberName;
-		static if (hasUDA!(mm, UIName)) {
+		static if (hasUDA!(mm, UIName))
+		{
 			memberName = getUDAs!(mm, UIName)[0].name;
 		}
-		else {
+		else
+		{
 			memberName = m;
 		}
 
-		static if (is(MT == float) || is(MT == double) || is(MT == int)) {
+		static if (is(MT == float) || is(MT == double) || is(MT == int))
+		{
 			MT minValue = 0;
 			MT maxValue = 1;
-			static if (hasUDA!(mm, UISlider!MT)) {
+			static if (hasUDA!(mm, UISlider!MT))
+			{
 				minValue = getUDAs!(mm, UISlider!MT)[0].minValue;
 				maxValue = getUDAs!(mm, UISlider!MT)[0].maxValue;
 			}
 
-			static if (is(MT == float)) {
+			static if (is(MT == float))
+			{
 				igSliderFloat(memberName.ptr, mm, minValue, maxValue);
 			}
-			else static if (is(MT == double)) {
-				
+			else static if (is(MT == double))
+			{
+
 			}
-			else static if (is(MT == int)) {
+			else static if (is(MT == int))
+			{
 				igSliderInt(memberName.ptr, mm, minValue, maxValue);
 			}
 		}
-		else static if (is(MT == string)) {
+		else static if (is(MT == string))
+		{
 			char[1000] buf;
 			//igInputText(memberName, )
 		}
-		else static if (is(MT == struct)) {
+		else static if (is(MT == struct))
+		{
 			//igGenericGUI(memberName, mm);
 		}
 	}
 }
 
-class MainScene 
+class MainScene
 {
 public:
-	this(string path) 
+	this(string path)
 	{
 		entities = new IDTable;
 		sceneObjects = new SceneObjectComponents;
@@ -123,22 +137,35 @@ public:
 		rootObject.calculateWorldBounds();
 	}
 
-	void render(Framebuffer target) 
+	void render(Framebuffer target)
 	{
-		if (!rootObject) 
+		if (!rootObject)
 		{
 			return;
 		}
 
+		import engine.renderer.deferred : GeometryBuffersSetupPass, RenderScenePass;
+
+		// FrameGraph test
+		FrameGraph fg = new FrameGraph();
+		auto gbuffersInit = addPass!(GeometryBuffersSetupPass)(fg, tuple(), 640, 480);
+		auto gbuffersScene = addPass!(RenderScenePass)(fg, tuple(gbuffersInit.depth,
+				gbuffersInit.normals, gbuffersInit.diffuse, gbuffersInit.objectIDs, gbuffersInit.velocity));
+		//auto taaPass = addPass!(TemporalAAPass)(fg, tuple(gbuffersScene.diffuse));
+		fg.compile();
+
 		import engine.render_utils : drawWireMesh;
-		camCtl.setAspectRatio(cast(float)target.width / cast(float)target.height);
+
+		camCtl.setAspectRatio(cast(float) target.width / cast(float) target.height);
 		camCtl.focusOnObject(*rootObject);
 		auto cam = camCtl.getCamera();
 		//debugMessage("cam=%s", cam);
-		foreach(ref s; sceneObjects.components) {
+		foreach (ref s; sceneObjects.components)
+		{
 			//debugMessage("rendering object %s", s);
 			if (s.mesh)
-				drawWireMesh(target, cam, *s.mesh, s.worldTransform, vec4(0.0f,1.0f,0.0f,1.0f));
+				drawWireMesh(target, cam, *s.mesh, s.worldTransform,
+						vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		}
 	}
 
@@ -177,18 +204,18 @@ void main()
 	writefln("OpenGL Version %d.%d loaded", GLVersion.major, GLVersion.minor);
 
 	// init gfx context
-	auto ctx = new Context(Context.Config(3,3*1024*1024));
+	auto ctx = new Context(Context.Config(3, 3 * 1024 * 1024));
 
 	// Create a texture, for fun
 	auto tex = Texture.create2D(ImageFormat.R8G8B8A8_UNORM, 16384, 16384, 1, 0,
-								Texture.Options.SparseStorage);
+			Texture.Options.SparseStorage);
 
 	MainScene mainScene = new MainScene("data/scenes/sponza/sponza.obj");
 
 	// test allocation
 	double t = 0.0;
 	bool show_test_window = true;
-    float[3] clear_color = [0.3f, 0.4f, 0.8f];
+	float[3] clear_color = [0.3f, 0.4f, 0.8f];
 
 	DerelictImgui.load();
 	igImplGlfwGL3_Init(w, true);
@@ -204,8 +231,9 @@ void main()
 		auto tcur = glfwGetTime();
 		auto tdiff = tcur - t;
 		t = tcur;
-		if (1000*tdiff > 1000/60.0+10.0) {
-			writefln("SPIKE %s", 1000*tdiff);
+		if (1000 * tdiff > 1000 / 60.0 + 10.0)
+		{
+			writefln("SPIKE %s", 1000 * tdiff);
 		}
 
 		glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0);

@@ -109,4 +109,9 @@ struct TemporalAAPass
     return true;
   }
 
+  void execute()
+  {
+    
+  }
+
 }
